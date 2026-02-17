@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Correspondent Banking Cheat Sheet — Learn with Siva</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;700;800&family=Outfit:wght@700;800;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #F5F0EB;
+            --text-main: #1a1a2e;
+            --text-muted: #666680;
+            --info: #0277BD;
+            --success: #2E7D32;
+            --warning: #E65100;
+            --danger: #C62828;
+            --purple: #7B1FA2;
+            --accent: #C19A8A;
+            --border: #D0C8BE;
+            --teal: #00695C;
+        }
+
+        body {
+            background: white;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text-main);
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 18mm 16mm;
+            margin: 0 auto;
+            page-break-after: always;
+        }
+
+        @media print {
+            .page {
+                padding: 14mm 12mm;
+            }
+        }
+
+        h1 {
+            font-family: 'Outfit';
+            font-size: 34px;
+            font-weight: 900;
+            letter-spacing: -2px;
+            margin-bottom: 4px;
+            color: var(--text-main);
+        }
+
+        h2 {
+            font-family: 'Outfit';
+            font-size: 19px;
+            font-weight: 800;
+            margin-top: 14px;
+            margin-bottom: 4px;
+            color: var(--info);
+            letter-spacing: -0.5px;
+        }
+
+        h3 {
+            font-family: 'DM Sans';
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 3px;
+            color: var(--text-main);
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .brand-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid var(--text-main);
+        }
+
+        .brand-bar img {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 3px solid var(--info);
+            object-fit: cover;
+        }
+
+        .brand-bar .name {
+            font-weight: 900;
+            font-size: 16px;
+        }
+
+        .brand-bar .role {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .brand-bar .tag {
+            margin-left: auto;
+            font-family: 'JetBrains Mono';
+            font-size: 10px;
+            color: var(--info);
+            font-weight: 800;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11.5px;
+            margin-bottom: 10px;
+        }
+
+        th {
+            background: var(--text-main);
+            color: white;
+            padding: 6px 8px;
+            text-align: left;
+            font-weight: 800;
+            font-size: 10.5px;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 5px 8px;
+            border-bottom: 1px solid var(--border);
+            line-height: 1.3;
+        }
+
+        tr:nth-child(even) td {
+            background: #f9f7f5;
+        }
+
+        .code {
+            font-family: 'JetBrains Mono';
+            font-weight: 700;
+            font-size: 11px;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono';
+        }
+
+        .grid2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .grid3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .grid4 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .card-title {
+            font-family: 'JetBrains Mono';
+            font-weight: 800;
+            font-size: 10px;
+            color: var(--info);
+            margin-bottom: 3px;
+            letter-spacing: 1px;
+        }
+
+        .section-label {
+            font-family: 'JetBrains Mono';
+            font-size: 10px;
+            font-weight: 800;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            margin: 12px 0 4px 0;
+        }
+
+        .insight-box {
+            background: var(--info);
+            color: white;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 11.5px;
+            margin: 8px 0;
+            line-height: 1.45;
+        }
+
+        .insight-box strong {
+            color: white;
+        }
+
+        .insight-box.green {
+            background: var(--success);
+        }
+
+        .insight-box.orange {
+            background: var(--warning);
+        }
+
+        .insight-box.red {
+            background: var(--danger);
+        }
+
+        .insight-box.purple {
+            background: var(--purple);
+        }
+
+        .insight-box.teal {
+            background: var(--teal);
+        }
+
+        .flow-bar {
+            display: flex;
+            gap: 0;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 3px solid var(--text-main);
+            margin-bottom: 10px;
+        }
+
+        .flow-bar div {
+            padding: 8px 6px;
+            text-align: center;
+            color: white;
+            flex: 1;
+        }
+
+        .flow-bar .label {
+            font-family: 'JetBrains Mono';
+            font-weight: 800;
+            font-size: 11px;
+        }
+
+        .flow-bar .sub {
+            font-size: 9px;
+            opacity: 0.85;
+        }
+
+        .footer-bar {
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-muted);
+            padding-top: 10px;
+            margin-top: 12px;
+            border-top: 2px solid var(--border);
+        }
+
+        .footer-bar a {
+            color: var(--info);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .stat-big {
+            font-family: 'Outfit';
+            font-size: 26px;
+            font-weight: 900;
+            color: var(--accent);
+        }
+
+        .stat-med {
+            font-family: 'Outfit';
+            font-size: 20px;
+            font-weight: 900;
+        }
+
+        .compact-list {
+            font-size: 11px;
+            line-height: 1.4;
+            padding-left: 16px;
+            margin-bottom: 6px;
+        }
+
+        .compact-list li {
+            margin-bottom: 2px;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        .dl-btn {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 9999;
+            background: #C62828;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 800;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 20px rgba(198, 40, 40, 0.4);
+            transition: all 0.2s;
+        }
+
+        .dl-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(198, 40, 40, 0.5);
+        }
+
+        .dl-btn.generating {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        @media print {
+            .dl-btn {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="dl-btn" id="dlBtn" onclick="downloadPDF()">&#128196; Download PDF</button>
+
+    <!-- ─── PAGE 1: HOW IT WORKS ─────────────────────────────────── -->
+    <div class="page">
+        <div class="brand-bar">
+            <img
+                src="data:image/jpeg;base64,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">
+            <div>
+                <div class="name">Sivasubramanian R.</div>
+                <div class="role">Product Owner &bull; Payments &amp; AI</div>
+            </div>
+            <div class="tag">LEARN_WITH_SIVA</div>
+        </div>
+        <h1>Correspondent Banking Cheat Sheet</h1>
+        <p class="subtitle">How cross-border payments actually flow — nostro accounts, ISO 20022, SWIFT gpi, and hidden
+            costs</p>
+
+        <h2>&#127758; The Cross-Border Payment Chain</h2>
+        <p style="font-size:11.5px; margin-bottom:6px;">A $10,000 SGD transfer to the UK passes through 3–5 banks. SWIFT
+            only transmits the instruction — <strong>it does not move money</strong>.</p>
+        <div class="flow-bar">
+            <div style="background:var(--info);">
+                <div class="label">1. Sender</div>
+                <div class="sub">Originator</div>
+                <div class="sub">DBS SG</div>
+            </div>
+            <div style="background:var(--warning);">
+                <div class="label">2. Correspondent</div>
+                <div class="sub">Intermediary</div>
+                <div class="sub">HSBC SG</div>
+            </div>
+            <div style="background:var(--success);">
+                <div class="label">3. FX Convert</div>
+                <div class="sub">SGD → GBP</div>
+                <div class="sub">HSBC LDN</div>
+            </div>
+            <div style="background:var(--purple);">
+                <div class="label">4. Beneficiary</div>
+                <div class="sub">Receiver</div>
+                <div class="sub">Barclays UK</div>
+            </div>
+        </div>
+
+        <div class="section-label">STEP-BY-STEP FLOW</div>
+        <table>
+            <tr>
+                <th>#</th>
+                <th>Step</th>
+                <th>What Happens</th>
+            </tr>
+            <tr>
+                <td class="code">1</td>
+                <td>Initiation</td>
+                <td>Importer instructs Bank A to pay foreign supplier's Bank B</td>
+            </tr>
+            <tr>
+                <td class="code">2</td>
+                <td>Debit &amp; FX</td>
+                <td>Bank A debits customer's account, calculates exchange rate, deducts equivalent</td>
+            </tr>
+            <tr>
+                <td class="code">3</td>
+                <td>SWIFT Messaging</td>
+                <td>Bank A sends <span class="code">pacs.008</span> via SWIFT. <strong>No money moves yet — only the
+                        instruction.</strong></td>
+            </tr>
+            <tr>
+                <td class="code">4</td>
+                <td>Nostro Settlement</td>
+                <td>Correspondent bank receives instruction, debits Bank A's pre-funded nostro account</td>
+            </tr>
+            <tr>
+                <td class="code">5</td>
+                <td>Domestic Clearing</td>
+                <td>If beneficiary is at a different bank, correspondent uses local rail (CHAPS, Fedwire, TARGET2)</td>
+            </tr>
+            <tr>
+                <td class="code">6</td>
+                <td>Final Credit</td>
+                <td>Beneficiary receives funds in local currency account</td>
+            </tr>
+        </table>
+
+        <div class="grid2">
+            <div class="card">
+                <div class="card-title">NOSTRO ACCOUNT</div>
+                <h3>"Our money at their bank"</h3>
+                <p style="font-size:11px; line-height:1.4;">DBS holds a USD nostro at Citibank NY. When DBS sends USD,
+                    Citi debits this account. Pre-funded — capital sits idle. Average balance:
+                    <strong>$50M–$500M</strong> depending on bank size.
+                </p>
+            </div>
+            <div class="card">
+                <div class="card-title">VOSTRO ACCOUNT</div>
+                <h3>"Their money at our bank"</h3>
+                <p style="font-size:11px; line-height:1.4;">Same account, different viewpoint. From Citi's perspective,
+                    DBS's account is a vostro. Both must reconcile <strong>daily</strong> — comparing external statement
+                    vs internal ledger, resolving exceptions.</p>
+            </div>
+        </div>
+
+        <h2>&#128232; ISO 20022 Messages in the Chain</h2>
+        <p style="font-size:11px; margin-bottom:4px;">Since Nov 2025, SWIFT uses ISO 20022 MX messages exclusively.
+            Legacy MT messages decommissioned.</p>
+        <table>
+            <tr>
+                <th>Message</th>
+                <th>Name</th>
+                <th>Direction</th>
+                <th>Purpose</th>
+            </tr>
+            <tr>
+                <td class="code">pacs.008</td>
+                <td>FI to FI Customer Credit Transfer</td>
+                <td style="color:var(--info);">→ Forward</td>
+                <td>Moves payment hop-by-hop through chain</td>
+            </tr>
+            <tr>
+                <td class="code">pacs.009</td>
+                <td>FI Credit Transfer (Cover)</td>
+                <td style="color:var(--info);">→ Forward</td>
+                <td>Settles funds via correspondent (cover method)</td>
+            </tr>
+            <tr>
+                <td class="code">pacs.002</td>
+                <td>Payment Status Report</td>
+                <td style="color:var(--success);">← Return</td>
+                <td>ACSP (accepted), ACCC (completed), RJCT (rejected)</td>
+            </tr>
+            <tr>
+                <td class="code">camt.054</td>
+                <td>Debit/Credit Notification</td>
+                <td style="color:var(--success);">← Return</td>
+                <td>Nostro account booking confirmation</td>
+            </tr>
+            <tr>
+                <td class="code">camt.056</td>
+                <td>Cancellation Request</td>
+                <td style="color:var(--danger);">← Return</td>
+                <td>Cancel a payment already in the chain</td>
+            </tr>
+        </table>
+
+        <h2>&#128269; SWIFT gpi &amp; UETR Tracking</h2>
+        <div class="grid2">
+            <div class="card">
+                <div class="card-title">UETR (UUID v4)</div>
+                <p style="font-size:11px; line-height:1.4;">Unique End-to-End Transaction Reference. Assigned at
+                    origination, tracks payment across every hop — like a FedEx tracking number.</p>
+                <div class="mono" style="font-size:10px; color:var(--info); margin-top:3px;">
+                    eb6305c2-2ef5-4f04-b2b5-7e3c6b4f9a1d</div>
+            </div>
+            <div class="card">
+                <div class="card-title">SWIFT gpi (Since 2016)</div>
+                <p style="font-size:11px; line-height:1.4;">Real-time tracker. Banks must confirm within 48 hours.
+                    <strong>96% of gpi payments credited within 24 hours</strong> (2024). Processes ~49M FIN
+                    messages/day.
+                </p>
+            </div>
+        </div>
+
+        <div class="insight-box">
+            <strong>&#128161; Why fees compound:</strong> Each intermediary deducts from the principal (SHA/BEN
+            charging). A 4-hop chain with 0.5% per hop ≈ 2% total loss — before FX spread. The beneficiary receives less
+            than expected. Hidden cost: FX markup of 0.5–3% over mid-market rate.
+        </div>
+
+        <div class="footer-bar">
+            Correspondent Banking Cheat Sheet — Page 1/5 &nbsp;|&nbsp; <a
+                href="https://linkedin.com/in/sivasub987">linkedin.com/in/sivasub987</a>
+        </div>
+    </div>
+
+    <!-- ─── PAGE 2: COSTS, SETTLEMENT, COMPARISON ─────────────── -->
+    <div class="page">
+        <h2>&#128200; Corridor Cost Comparison</h2>
+        <p style="font-size:11px; margin-bottom:4px;">Source: World Bank Remittance Prices Worldwide, 2024. G20 target:
+            ≤3% by 2030.</p>
+        <table>
+            <tr>
+                <th>Corridor</th>
+                <th>Avg Cost</th>
+                <th>Hops</th>
+                <th>Time</th>
+                <th>Key Issue</th>
+            </tr>
+            <tr>
+                <td>USA → UK</td>
+                <td class="code" style="color:var(--success);">1.5%</td>
+                <td>2</td>
+                <td>1 day</td>
+                <td>Well-served, high competition</td>
+            </tr>
+            <tr>
+                <td>Singapore → UK</td>
+                <td class="code" style="color:var(--success);">2.1%</td>
+                <td>3</td>
+                <td>1-2 days</td>
+                <td>Good corridor, HSBC bridge</td>
+            </tr>
+            <tr>
+                <td>UAE → Philippines</td>
+                <td class="code" style="color:var(--warning);">3.45%</td>
+                <td>3</td>
+                <td>1-2 days</td>
+                <td>OFW corridor, improving</td>
+            </tr>
+            <tr>
+                <td>Japan → Mexico</td>
+                <td class="code" style="color:var(--warning);">4.2%</td>
+                <td>4</td>
+                <td>2-3 days</td>
+                <td>Exotic double-cross: JPY→USD→MXN</td>
+            </tr>
+            <tr>
+                <td>India → USA</td>
+                <td class="code" style="color:var(--danger);">5.12%</td>
+                <td>3</td>
+                <td>1 day</td>
+                <td>RBI LRS compliance overhead</td>
+            </tr>
+            <tr>
+                <td>USA → China</td>
+                <td class="code" style="color:var(--danger);">6.72%</td>
+                <td>3</td>
+                <td>24-48h</td>
+                <td>Capital controls, reporting requirements</td>
+            </tr>
+            <tr>
+                <td>Italy → Bangladesh</td>
+                <td class="code" style="color:var(--danger);">8.45%</td>
+                <td>4</td>
+                <td>2-4 days</td>
+                <td>Highest G20 corridor cost</td>
+            </tr>
+            <tr>
+                <td>USA → Nigeria</td>
+                <td class="code" style="color:var(--danger);">8.78%</td>
+                <td>4</td>
+                <td>2-4 days</td>
+                <td>De-risking, banks exiting</td>
+            </tr>
+        </table>
+
+        <h2>&#9889; Settlement Stack Comparison</h2>
+        <table>
+            <tr>
+                <th>Method</th>
+                <th>Speed</th>
+                <th>Cost</th>
+                <th>Finality</th>
+                <th>Coverage</th>
+            </tr>
+            <tr>
+                <td><strong>Correspondent Banking</strong></td>
+                <td>1-5 days</td>
+                <td>2-9%</td>
+                <td>Deferred (each hop)</td>
+                <td>Global (200+ countries)</td>
+            </tr>
+            <tr>
+                <td><strong>Card Networks</strong></td>
+                <td>T+2 (T+1 US)</td>
+                <td>1.5-3.5%</td>
+                <td>Auth instant, settle deferred</td>
+                <td>Point of sale focused</td>
+            </tr>
+            <tr>
+                <td><strong>IPS (FedNow/TIPS/UPI)</strong></td>
+                <td>&lt;10 sec</td>
+                <td>€0.002–0.5%</td>
+                <td>Irrevocable</td>
+                <td>Domestic (expanding)</td>
+            </tr>
+            <tr>
+                <td><strong>Stablecoins (L2)</strong></td>
+                <td>~15 sec</td>
+                <td>~$0.01</td>
+                <td>Probabilistic (12+ confirms)</td>
+                <td>Unbanked-friendly</td>
+            </tr>
+            <tr>
+                <td><strong>Tokenized Deposits</strong></td>
+                <td>&lt;1 sec</td>
+                <td>Near zero</td>
+                <td>Deterministic (DvP)</td>
+                <td>Institutional only</td>
+            </tr>
+        </table>
+
+        <h2>&#128176; Why Correspondent Banking is Expensive</h2>
+        <div class="grid4">
+            <div class="card">
+                <div class="card-title">CHAIN LENGTH</div>
+                <p style="font-size:10.5px; line-height:1.3;">More hops = more fees. Each bank adds $15–50 per leg.
+                    Exotic corridors need 4+ hops.</p>
+            </div>
+            <div class="card">
+                <div class="card-title">FX SPREAD</div>
+                <p style="font-size:10.5px; line-height:1.3;">Banks apply 0.5–3% over mid-market. Two FX conversions
+                    (JPY→USD→MXN) double it.</p>
+            </div>
+            <div class="card">
+                <div class="card-title">COMPLIANCE</div>
+                <p style="font-size:10.5px; line-height:1.3;">KYC/AML/CFT at each hop. High-risk corridors face
+                    "de-risking" — banks exit entirely.</p>
+            </div>
+            <div class="card">
+                <div class="card-title">TIME ZONES</div>
+                <p style="font-size:10.5px; line-height:1.3;">RTGS windows: 8am–5pm local. SG→NY (UTC+8 to -5) = 12+
+                    hour delay waiting for NY to open.</p>
+            </div>
+        </div>
+
+        <div class="grid2" style="margin-bottom:6px;">
+            <div class="card" style="text-align:center; padding:14px;">
+                <div class="stat-big">$794 Billion</div>
+                <p style="font-size:11px; color:var(--text-muted); margin-top:3px;">Trapped in pre-funded nostro
+                    accounts globally</p>
+                <p style="font-size:9px; color:var(--text-muted); font-style:italic;">BIS CPMI / FSB studies, 2016
+                    baseline</p>
+            </div>
+            <div class="card" style="text-align:center; padding:14px;">
+                <div class="stat-big">25% Decline</div>
+                <p style="font-size:11px; color:var(--text-muted); margin-top:3px;">In correspondent banking
+                    relationships since 2011</p>
+                <p style="font-size:9px; color:var(--text-muted); font-style:italic;">BIS — higher concentration, fewer
+                    channels</p>
+            </div>
+        </div>
+
+        <h2>&#127974; Top Correspondent Banks (2025)</h2>
+        <table>
+            <tr>
+                <th>Bank</th>
+                <th>Key Metric</th>
+                <th>Notes</th>
+            </tr>
+            <tr>
+                <td><strong>Citibank</strong></td>
+                <td>$95.1B cross-border Q1 2025 (+5% YoY)</td>
+                <td>TTS revenue grew 3%, market share gains</td>
+            </tr>
+            <tr>
+                <td><strong>JPMorgan</strong></td>
+                <td>Payments revenue $4.9B Q3 2025 (+13%)</td>
+                <td>Kinexys: $5B/day tokenized deposits</td>
+            </tr>
+            <tr>
+                <td><strong>HSBC</strong></td>
+                <td>CIB revenue growth H1 2025</td>
+                <td>AI-driven AML monitoring, Asia-Pacific strong</td>
+            </tr>
+            <tr>
+                <td><strong>BNY Mellon</strong></td>
+                <td>$55.8T AuC, Payments revenue +11%</td>
+                <td>120+ currency fund transfer services</td>
+            </tr>
+        </table>
+
+        <div class="insight-box green">
+            <strong>&#128161; The vicious cycle:</strong> High cost → low volume → banks exit → even higher cost for
+            remaining users. The corridors with the most trapped capital (Italy→Bangladesh: 8.45%) are losing
+            correspondent relationships fastest. ~2,000 firms still provide cross-border services. Top 5 currencies: USD
+            47%, EUR 33%, GBP 7%.
+        </div>
+
+        <div class="footer-bar">
+            Correspondent Banking Cheat Sheet — Page 2/5 &nbsp;|&nbsp; <a
+                href="https://linkedin.com/in/sivasub987">linkedin.com/in/sivasub987</a>
+        </div>
+    </div>
+
+    <!-- ─── PAGE 3: SETTLEMENT FINALITY, NETTING, CLS ────────── -->
+    <div class="page">
+        <h2>&#9878; Settlement Finality — When Is It Legally Irrevocable?</h2>
+        <p style="font-size:11px; margin-bottom:4px;">Finality = the moment a transfer becomes irrevocable and
+            unconditional, cannot be unwound even in insolvency.</p>
+
+        <div class="section-label">SF1 / SF2 / SF3 FRAMEWORK (EUROPEAN REGULATION)</div>
+        <table>
+            <tr>
+                <th>Stage</th>
+                <th>Name</th>
+                <th>What Happens</th>
+            </tr>
+            <tr>
+                <td class="code">SF1</td>
+                <td>Moment of Entry</td>
+                <td>Transfer order validated by system, enforceable against third parties</td>
+            </tr>
+            <tr>
+                <td class="code">SF2</td>
+                <td>Moment of Irrevocability</td>
+                <td>Order can no longer be cancelled by sender</td>
+            </tr>
+            <tr>
+                <td class="code">SF3</td>
+                <td>Moment of Settlement</td>
+                <td>Actual debit/credit occurs, obligation extinguished</td>
+            </tr>
+        </table>
+
+        <div class="section-label">FINALITY BY SYSTEM TYPE</div>
+        <table>
+            <tr>
+                <th>System</th>
+                <th>Finality</th>
+                <th>Liquidity Needed</th>
+                <th>Risk</th>
+            </tr>
+            <tr>
+                <td><strong>RTGS</strong> (Fedwire, CHAPS, TARGET2)</td>
+                <td>Immediate, per-transaction</td>
+                <td>High (gross basis)</td>
+                <td>Zero settlement risk</td>
+            </tr>
+            <tr>
+                <td><strong>DNS</strong> (ACH, most card nets)</td>
+                <td>End of cycle (batch)</td>
+                <td>Low (net basis)</td>
+                <td>Unwind risk if default before final settlement</td>
+            </tr>
+            <tr>
+                <td><strong>Hybrid</strong> (CHIPS, EURO1)</td>
+                <td>Intraday immediate</td>
+                <td>Medium (pre-funded)</td>
+                <td>Single obligation structure</td>
+            </tr>
+            <tr>
+                <td><strong>Public Blockchain</strong></td>
+                <td>Probabilistic (~6 blocks BTC, ~13 min ETH)</td>
+                <td>100% pre-funded</td>
+                <td>Legal uncertainty; courts could order unwinding</td>
+            </tr>
+            <tr>
+                <td><strong>Permissioned DLT</strong> (Kinexys)</td>
+                <td>Deterministic, immediate</td>
+                <td>Pre-funded or credit</td>
+                <td>Same legal certainty as RTGS</td>
+            </tr>
+        </table>
+
+        <h2>&#128257; Netting Mechanics — Why T+0 Is Hard</h2>
+        <p style="font-size:11px; margin-bottom:4px;">Settlement takes T+2 because of the <strong>separation of
+                messaging from settlement</strong>. Banks trade IOUs on isolated, private ledgers.</p>
+
+        <div class="grid2">
+            <div class="card">
+                <div class="card-title">DNS (DEFERRED NET)</div>
+                <p style="font-size:10.5px; line-height:1.4;">Buy $1B + Sell $1B = owe $0. Accumulate transactions,
+                    settle only the net difference. <strong>CLS achieves 99% netting efficiency</strong> — only 1% of
+                    gross value actually moves.</p>
+            </div>
+            <div class="card">
+                <div class="card-title">RTGS (GROSS)</div>
+                <p style="font-size:10.5px; line-height:1.4;">Every transaction settled individually, instantly. Need
+                    $1B cash <strong>NOW</strong>. Zero settlement risk but massive liquidity requirement. TARGET2: 100%
+                    of payments settled in &lt;5 min.</p>
+            </div>
+        </div>
+
+        <div class="section-label">THE "THREE MONIES PROBLEM" — WHY T+0 IS HARD FOR CARDS</div>
+        <div class="grid3">
+            <div class="card">
+                <div class="card-title">1. DUAL MESSAGING</div>
+                <p style="font-size:10px; line-height:1.3;">Authorization (real-time) and settlement (batch) are
+                    separate ISO 8583 steps. Unifying them requires redesigning the entire flow.</p>
+            </div>
+            <div class="card">
+                <div class="card-title">2. FEE COMPLEXITY</div>
+                <p style="font-size:10px; line-height:1.3;">Interchange + network assessment calculated in batch.
+                    Per-transaction real-time fee calc is computationally expensive at scale.</p>
+            </div>
+            <div class="card">
+                <div class="card-title">3. THREE LEDGERS</div>
+                <p style="font-size:10px; line-height:1.3;">Customer deposits, merchant deposits, and central bank
+                    reserves live on separate ledgers. Synchronizing instantly without a unified ledger is hard.</p>
+            </div>
+        </div>
+
+        <h2>&#128279; CLS — Killing Herstatt Risk (PvP Settlement)</h2>
+        <div class="grid2">
+            <div class="card">
+                <div class="card-title">THE HERSTATT FAILURE (1974)</div>
+                <p style="font-size:10.5px; line-height:1.4;">German regulators closed Herstatt at 15:30 CET.
+                    Counterparties had <strong>already paid DEM</strong> but hadn't received USD (US market just
+                    opened). Chase Manhattan suspended USD payments → global FX market froze. Created "Herstatt Risk" →
+                    directly led to CLS.</p>
+            </div>
+            <div class="card">
+                <div class="card-title">CLS: PAYMENT-vs-PAYMENT</div>
+                <p style="font-size:10.5px; line-height:1.4;"><strong>18 currencies</strong>, settling $10T+/day. Both
+                    legs of FX trade settle simultaneously — one settles <strong>if and only if</strong> the other also
+                    settles. Netting: <strong>99% efficiency</strong>. Proved resilient during Lehman (2008).</p>
+            </div>
+        </div>
+
+        <div class="footer-bar">
+            Correspondent Banking Cheat Sheet — Page 3/5 &nbsp;|&nbsp; <a
+                href="https://linkedin.com/in/sivasub987">linkedin.com/in/sivasub987</a>
+        </div>
+    </div>
+
+    <!-- ─── PAGE 4: ISO 20022, IPS, TOKENIZED vs STABLECOINS ──── -->
+    <div class="page">
+        <h2>&#128196; ISO 20022 Migration — The Quiet Revolution</h2>
+        <table>
+            <tr>
+                <th>Legacy (MT / 8583)</th>
+                <th>ISO 20022</th>
+            </tr>
+            <tr>
+                <td>Unstructured text → data truncation</td>
+                <td>Distinct data elements (street, building, town, country)</td>
+            </tr>
+            <tr>
+                <td>No standard identifiers</td>
+                <td>LEIs (Legal Entity Identifiers), UETRs</td>
+            </tr>
+            <tr>
+                <td>Limited remittance data</td>
+                <td>Rich remittance info travels with payment</td>
+            </tr>
+            <tr>
+                <td>Manual reconciliation, high error rate</td>
+                <td>Automated matching by corporate treasuries</td>
+            </tr>
+            <tr>
+                <td>60–70% STP rate</td>
+                <td><strong>&gt;95% STP rate</strong> (fewer false positives in sanctions screening)</td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <th>System</th>
+                <th>Status</th>
+                <th>Deadline</th>
+            </tr>
+            <tr>
+                <td><strong>SWIFT cross-border</strong></td>
+                <td>Live (MT decommissioned)</td>
+                <td>Nov 2025 ✅</td>
+            </tr>
+            <tr>
+                <td><strong>Fedwire</strong> (USD)</td>
+                <td>Migration complete</td>
+                <td>Mar 2025 ✅</td>
+            </tr>
+            <tr>
+                <td><strong>TARGET2</strong> (EUR)</td>
+                <td>Live</td>
+                <td>Already migrated ✅</td>
+            </tr>
+            <tr>
+                <td><strong>CHAPS</strong> (GBP)</td>
+                <td>Live</td>
+                <td>Already migrated ✅</td>
+            </tr>
+        </table>
+
+        <div class="insight-box orange">
+            <strong>&#128161; The reconciliation tax:</strong> Every bank operates as an isolated island. No "golden
+            copy" or shared ledger exists. Banks exchange SWIFT messages and confirm amounts match — error-prone,
+            consuming T+1 day in matching/exception resolution. DLT promises to eliminate this via "pre-conciling" on a
+            shared ledger. ISO 20022's structured data is the first step.
+        </div>
+
+        <h2>&#128640; Instant Payment Systems — The Domestic Answer</h2>
+        <div class="grid3">
+            <div class="card">
+                <div class="card-title">FEDNOW (US)</div>
+                <p style="font-size:10px; line-height:1.3;">Launched Jul 2023. <strong>1,500+ institutions live</strong>
+                    (Nov 2025). $853B settled in 2025 (+460% YoY). Limit: $10M. <span style="color:var(--danger);">But
+                        85% of US banks haven't adopted.</span></p>
+            </div>
+            <div class="card">
+                <div class="card-title">TIPS (EU)</div>
+                <p style="font-size:10px; line-height:1.3;">24/7/365. 99% settled in <strong>&lt;5 seconds</strong>.
+                    Cost: <strong>€0.002/tx</strong>. Capacity: 500 payments/sec. Multi-currency (EUR, SEK, DKK
+                    planned).</p>
+            </div>
+            <div class="card">
+                <div class="card-title">UPI (India)</div>
+                <p style="font-size:10px; line-height:1.3;"><strong>16B+ transactions/month</strong>. Instant, near-zero
+                    cost. Connected with Singapore (PayNow-UPI). Template for global IPS linking.</p>
+            </div>
+        </div>
+
+        <h2>&#128178; Tokenized Deposits vs Stablecoins</h2>
+        <table>
+            <tr>
+                <th>Feature</th>
+                <th>Stablecoin (USDC/USDT)</th>
+                <th>Tokenized Deposit (Kinexys/JPMD)</th>
+            </tr>
+            <tr>
+                <td><strong>Nature</strong></td>
+                <td>Bearer instrument (digital cash)</td>
+                <td>Registered liability (bank deposit)</td>
+            </tr>
+            <tr>
+                <td><strong>Issuer</strong></td>
+                <td>Private non-bank (Circle, Tether)</td>
+                <td>Regulated bank (JPMorgan)</td>
+            </tr>
+            <tr>
+                <td><strong>Settlement</strong></td>
+                <td>Public blockchain (ETH, Solana)</td>
+                <td>Permissioned ledger (Kinexys)</td>
+            </tr>
+            <tr>
+                <td><strong>Finality</strong></td>
+                <td>Probabilistic (public chains)</td>
+                <td>Deterministic (legally binding)</td>
+            </tr>
+            <tr>
+                <td><strong>Insurance</strong></td>
+                <td>None (USDC de-pegged to $0.88 during SVB)</td>
+                <td>FDIC insured, bank-grade custody</td>
+            </tr>
+            <tr>
+                <td><strong>Pre-funding</strong></td>
+                <td>100% (no credit in stablecoins)</td>
+                <td>Can leverage existing bank credit</td>
+            </tr>
+            <tr>
+                <td><strong>Access</strong></td>
+                <td>Permissionless (anyone with wallet)</td>
+                <td>Institutional clients only</td>
+            </tr>
+            <tr>
+                <td><strong>Scale</strong></td>
+                <td>USDT $184B + USDC $73B cap; $33T/yr on-chain</td>
+                <td>$5B/day (Kinexys, Feb 2026)</td>
+            </tr>
+        </table>
+
+        <div class="footer-bar">
+            Correspondent Banking Cheat Sheet — Page 4/5 &nbsp;|&nbsp; <a
+                href="https://linkedin.com/in/sivasub987">linkedin.com/in/sivasub987</a>
+        </div>
+    </div>
+
+    <!-- ─── PAGE 5: G20, EXPERIMENTS, REGULATION ──────────────── -->
+    <div class="page">
+        <h2>&#127760; G20 Targets vs Reality (FSB Progress Report, Oct 2025)</h2>
+        <table>
+            <tr>
+                <th>Dimension</th>
+                <th>Target (by 2027/2030)</th>
+                <th>Reality (2025)</th>
+                <th>Status</th>
+            </tr>
+            <tr>
+                <td><strong>Retail Cost</strong></td>
+                <td>≤1%, no corridor &gt;3%</td>
+                <td>Global average &gt;6%</td>
+                <td style="color:var(--danger);"><strong>Off track</strong></td>
+            </tr>
+            <tr>
+                <td><strong>Remittance Cost</strong></td>
+                <td>≤3% for $200 (by 2030)</td>
+                <td>USA→Nigeria: 8.78%</td>
+                <td style="color:var(--danger);"><strong>Off track</strong></td>
+            </tr>
+            <tr>
+                <td><strong>Speed</strong></td>
+                <td>75% within 1 hour</td>
+                <td>Most take 24-96 hours</td>
+                <td style="color:var(--danger);"><strong>Off track</strong></td>
+            </tr>
+            <tr>
+                <td><strong>Transparency</strong></td>
+                <td>All PSPs offer min info</td>
+                <td>gpi improving</td>
+                <td style="color:var(--warning);">Partial</td>
+            </tr>
+        </table>
+
+        <h2>&#127981; Central Bank Experiments</h2>
+        <table>
+            <tr>
+                <th>Project</th>
+                <th>Lead</th>
+                <th>What It Tests</th>
+            </tr>
+            <tr>
+                <td><strong>Guardian</strong></td>
+                <td>MAS (Singapore)</td>
+                <td>Tokenized bank liabilities + wCBDC for cross-border FX</td>
+            </tr>
+            <tr>
+                <td><strong>Agorá</strong></td>
+                <td>BIS + 7 central banks</td>
+                <td>Unified platform: tokenized deposits + wholesale CBDC</td>
+            </tr>
+            <tr>
+                <td><strong>mBridge</strong></td>
+                <td>BIS → central banks (Oct 2024)</td>
+                <td>Multi-CBDC for PvP; $55B processed, ~4,047 transactions</td>
+            </tr>
+            <tr>
+                <td><strong>Ensemble</strong></td>
+                <td>HKMA</td>
+                <td>Sandbox for interbank settlement using tokenized money</td>
+            </tr>
+            <tr>
+                <td><strong>D-FMI</strong></td>
+                <td>Euroclear</td>
+                <td>Digital securities settlement, scalable to 20,000 TPS</td>
+            </tr>
+        </table>
+
+        <h2>&#128220; Regulatory Landscape (Feb 2026)</h2>
+        <div class="grid3">
+            <div class="card">
+                <div class="card-title">US: GENIUS ACT</div>
+                <p style="font-size:10px; line-height:1.3;">Signed Jul 2025. 1:1 reserves (T-bills ≤90d). No
+                    rehypothecation. No interest. &gt;$10B → federal oversight. <strong>Not a security.</strong>
+                    Treasury rulemaking by Jul 2026.</p>
+            </div>
+            <div class="card">
+                <div class="card-title">EU: MiCA</div>
+                <p style="font-size:10px; line-height:1.3;">Fully operational Dec 2024. E-Money Tokens vs
+                    Asset-Referenced Tokens. 30–60% in bank deposits. No interest. Algorithmic stablecoins banned. Auth
+                    deadline: Jul 2026.</p>
+            </div>
+            <div class="card">
+                <div class="card-title">SG: MAS SCS</div>
+                <p style="font-size:10px; line-height:1.3;">SGD or any G10 peg. Redemption at par within 5 business
+                    days. Foreign stablecoins cannot use "MAS-Regulated" label.</p>
+            </div>
+        </div>
+
+        <div class="insight-box purple">
+            <strong>&#128161; The real competition isn't crypto vs banks.</strong> It's tokenized deposits vs
+            stablecoins. JPMorgan does $5B/day on a permissioned chain with deterministic finality and FDIC insurance.
+            Circle does $33T/yr on public chains with probabilistic finality and no deposit insurance. Same technology,
+            different risk profiles. Global consensus emerging: 1:1 reserves, no interest, licensing, regular audits.
+        </div>
+
+        <div class="insight-box teal">
+            <strong>&#128161; Why stablecoins are winning in remittances:</strong> Not because they're better technology
+            — but because the incumbent system is failing to meet its own G20 targets. The pull toward stablecoins is
+            partly a failure of correspondent banking reform. Cost: $5–10 for a $500 transfer (vs $20–30 traditional).
+            Speed: near-instant, 24/7/365.
+        </div>
+
+        <div class="footer-bar">
+            Correspondent Banking Cheat Sheet — Page 5/5 &nbsp;|&nbsp; <a
+                href="https://linkedin.com/in/sivasub987">linkedin.com/in/sivasub987</a>
+            <br><span style="font-size:9px;">&copy; 2025 Learn with Siva &nbsp;|&nbsp; Share freely, credit
+                appreciated</span>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        async function downloadPDF() {
+            const btn = document.getElementById('dlBtn');
+            btn.classList.add('generating');
+            btn.innerHTML = '&#9203; Generating...';
+            await new Promise(r => setTimeout(r, 100));
+            try {
+                const pages = document.querySelectorAll('.page');
+                const pdf = new jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                const pW = pdf.internal.pageSize.getWidth();
+                const pH = pdf.internal.pageSize.getHeight();
+                for (let i = 0; i < pages.length; i++) {
+                    const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, allowTaint: true });
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                    const scaleW = pW / canvas.width;
+                    const scaleH = pH / canvas.height;
+                    const scale = Math.min(scaleW, scaleH);
+                    const imgW = canvas.width * scale;
+                    const imgH = canvas.height * scale;
+                    if (i > 0) pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', (pW - imgW) / 2, (pH - imgH) / 2, imgW, imgH);
+                }
+                pdf.save('Correspondent_Banking_Cheat_Sheet.pdf');
+            } catch (e) {
+                console.error(e);
+                alert('PDF generation failed. Try: Print → Save as PDF');
+            }
+            btn.classList.remove('generating');
+            btn.innerHTML = '&#128196; Download PDF';
+        }
+    </script>
+</body>
+
+</html>
