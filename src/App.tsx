@@ -16,8 +16,10 @@ const NODE_W = 150, NODE_H = 70, GAP_X = 60, PAD_X = 30, PAD_Y = 40;
 const getNodeX = (i: number) => PAD_X + i * (NODE_W + GAP_X);
 const getNodeCX = (i: number) => getNodeX(i) + NODE_W / 2;
 
+type SettlementMethod = 'serial' | 'cover';
+
 // ─── Flow Visualization (SVG) ────────────────────────────────
-function FlowVisualization({ corridor, currentStep }: { corridor: Corridor; currentStep: number }) {
+function FlowVisualization({ corridor, steps, currentStep }: { corridor: Corridor; steps: Step[]; currentStep: number }) {
     const banks = corridor.banks;
     const totalW = banks.length * NODE_W + (banks.length - 1) * GAP_X + PAD_X * 2;
     const totalH = NODE_H + PAD_Y * 2 + 80;
@@ -26,12 +28,12 @@ function FlowVisualization({ corridor, currentStep }: { corridor: Corridor; curr
     const nodeCY = nodeY + NODE_H / 2;
 
     // Which banks are active/completed
-    const activeStep = corridor.steps[currentStep];
+    const activeStep = steps[currentStep];
     const completedBanks = new Set<number>();
     const activeBanks = new Set<number>();
     for (let i = 0; i < currentStep; i++) {
-        completedBanks.add(corridor.steps[i].from);
-        completedBanks.add(corridor.steps[i].to);
+        completedBanks.add(steps[i].from);
+        completedBanks.add(steps[i].to);
     }
     if (activeStep) {
         activeBanks.add(activeStep.from);
@@ -41,7 +43,7 @@ function FlowVisualization({ corridor, currentStep }: { corridor: Corridor; curr
     return (
         <svg viewBox={`0 0 ${totalW} ${totalH}`} className="flow-svg" preserveAspectRatio="xMidYMid meet">
             {/* Edges */}
-            {corridor.steps.map((step, i) => {
+            {steps.map((step, i) => {
                 const fromX = getNodeCX(step.from);
                 const toX = getNodeCX(step.to);
                 const isForward = step.direction === 'forward';
@@ -196,8 +198,8 @@ function StepDetail({ step, corridor }: { step: Step; corridor: Corridor }) {
 type ChargeBearer = 'SHA' | 'OUR' | 'BEN';
 
 // ─── Stats Summary Panel ─────────────────────────────────────
-function StatsSummary({ corridor, amount, chargeBearer }: { corridor: Corridor; amount: number; chargeBearer: ChargeBearer }) {
-    const forwardSteps = corridor.steps.filter(s => s.fee && s.direction === 'forward');
+function StatsSummary({ corridor, steps, amount, chargeBearer }: { corridor: Corridor; steps: Step[]; amount: number; chargeBearer: ChargeBearer }) {
+    const forwardSteps = steps.filter(s => s.fee && s.direction === 'forward');
     const totalFees = forwardSteps.reduce((sum, s) => sum + (s.fee || 0), 0);
 
     // Fee allocation depends on charge bearer (Field 71A / <ChrgBr>)
@@ -294,111 +296,220 @@ function StatsSummary({ corridor, amount, chargeBearer }: { corridor: Corridor; 
 // ─── Learn Panel ─────────────────────────────────────────────
 function LearnPanel() {
     return (
-        <Paper className="brut-card" p="lg">
-            <div className="learn-section">
-                <Title order={3} mb="sm">How Correspondent Banking Works</Title>
-                <p>
-                    When you send money across borders, your bank probably doesn't have a direct relationship with the
-                    receiving bank. Instead, your payment hops through a chain of <strong>correspondent banks</strong> — intermediaries
-                    that maintain accounts with each other called <strong>nostro</strong> (ours at theirs) and <strong>vostro</strong> (theirs at ours) accounts.
-                </p>
+        <Stack gap="lg">
+            <Paper className="brut-card" p="lg">
+                <div className="learn-section">
+                    <Title order={3} mb="sm">How Correspondent Banking Works</Title>
+                    <p>
+                        When you send money across borders, your bank rarely has a direct relationship with the
+                        receiving bank. Instead, your payment travels through a chain of <strong>correspondent banks</strong> — intermediaries
+                        that maintain accounts with each other called <strong>nostro</strong> (ours at theirs) and <strong>vostro</strong> (theirs at ours) accounts.
+                    </p>
+                    <p>
+                        There are two fundamental methods for routing payments through this chain: <strong>serial</strong> and <strong>cover</strong>.
+                        Both achieve the same outcome — funds move from sender to beneficiary — but they differ in how instructions
+                        and settlement travel through the network. Use the toggle in the simulator to see each in action.
+                    </p>
 
-                <h3><IconCoins size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 6 }} />The Scale of Trapped Liquidity</h3>
-                <span className="highlight-stat">$794 Billion</span>
-                <p>
-                    That's the amount sitting in pre-funded nostro accounts globally. Banks must park capital at every
-                    correspondent in the chain — money that could otherwise be deployed for lending or investment.
-                </p>
-                <p style={{ fontSize: '0.75rem', opacity: 0.7, fontStyle: 'italic' }}>
-                    Source: Industry estimate based on BIS CPMI / FSB correspondent banking studies (2016 baseline data).
-                    See <a href="https://www.bis.org/cpmi/publ/d147.htm" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--info)' }}>BIS CPMI Report on Correspondent Banking</a>.
-                </p>
-
-                <h3><IconMail size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 6 }} />ISO 20022: The New Standard</h3>
-                <p>
-                    As of November 2025, SWIFT has fully migrated from legacy MT messages (MT103) to ISO 20022 MX messages.
-                    The key messages you'll see in this simulator:
-                </p>
-                <div className="table-scroll">
-                    <table className="ref-table">
-                        <thead>
-                            <tr><th>Message</th><th>Name</th><th>Direction</th><th>Purpose</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td className="mono">pacs.008</td>
-                                <td>FI to FI Customer Credit Transfer</td>
-                                <td><Badge color="blue" size="sm">→ Forward</Badge></td>
-                                <td>Direct instruction from originator to beneficiary bank (cover method)</td>
-                            </tr>
-                            <tr>
-                                <td className="mono">pacs.009</td>
-                                <td>FI Credit Transfer (Cover)</td>
-                                <td><Badge color="blue" size="sm">→ Forward</Badge></td>
-                                <td>Settlement via correspondent chain (same UETR links to pacs.008)</td>
-                            </tr>
-                            <tr>
-                                <td className="mono">pacs.002</td>
-                                <td>Payment Status Report</td>
-                                <td><Badge color="green" size="sm">← Backward</Badge></td>
-                                <td>Status feedback: ACSP (accepted), ACCC (completed), RJCT (rejected)</td>
-                            </tr>
-                            <tr>
-                                <td className="mono">camt.054</td>
-                                <td>Debit/Credit Notification</td>
-                                <td><Badge color="green" size="sm">← Backward</Badge></td>
-                                <td>Nostro account booking confirmation for reconciliation</td>
-                            </tr>
-                            <tr>
-                                <td className="mono">camt.056</td>
-                                <td>Cancellation Request</td>
-                                <td><Badge color="red" size="sm">← Backward</Badge></td>
-                                <td>Request to cancel a payment already in the chain</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <h3><IconCoins size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 6 }} />The Scale of Trapped Liquidity</h3>
+                    <span className="highlight-stat">$794 Billion</span>
+                    <p>
+                        That's the amount sitting in pre-funded nostro accounts globally. Banks must park capital at every
+                        correspondent in the chain — money that could otherwise be deployed for lending or investment.
+                    </p>
+                    <p style={{ fontSize: '0.75rem', opacity: 0.7, fontStyle: 'italic' }}>
+                        Source: Industry estimate based on BIS CPMI / FSB correspondent banking studies (2016 baseline data).
+                        See <a href="https://www.bis.org/cpmi/publ/d147.htm" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--info)' }}>BIS CPMI Report on Correspondent Banking</a>.
+                    </p>
                 </div>
+            </Paper>
 
-                <h3><IconWorld size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 6 }} />SWIFT gpi & UETR</h3>
-                <p>
-                    Every payment gets a <strong>UETR</strong> (Unique End-to-End Transaction Reference) — a UUID that tracks the
-                    payment across every hop. The SWIFT gpi Tracker provides real-time visibility into where a payment is,
-                    how much has been deducted in fees, and when it was credited. 50% of gpi payments are credited within 30 minutes.
-                </p>
+            {/* Serial vs Cover Deep Dive */}
+            <Paper className="brut-card" p="lg">
+                <div className="learn-section">
+                    <Title order={3} mb="sm">Serial Method (SttlmMtd = INDA)</Title>
+                    <p>
+                        In the <strong>serial method</strong>, a single <code>pacs.008</code> message travels hop-by-hop from the originating bank (A)
+                        through each intermediary (B, C) to the beneficiary bank (D). Each bank in the chain forwards the
+                        same message to the next, deducting fees and performing FX conversion along the way.
+                    </p>
+                    <p>
+                        The settlement method field is set to <code>INDA</code> (Instructed Agent) or <code>INGA</code>, meaning each bank settles
+                        bilaterally with the next bank via their shared nostro/vostro accounts. Every bank in the chain
+                        sees the full payment details.
+                    </p>
+                    <div style={{ background: 'var(--surface-2)', padding: '12px 16px', borderRadius: 8, margin: '12px 0', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', lineHeight: 1.8 }}>
+                        <strong>Flow:</strong> A →<sup>pacs.008</sup>→ B →<sup>pacs.008</sup>→ C →<sup>pacs.008</sup>→ D<br />
+                        <strong>Settlement:</strong> Each hop settles independently (nostro debit/credit at each bank)
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--ink-secondary)' }}>
+                        <strong>Legacy equivalent:</strong> MT 103 serial (the MT 103 was forwarded from bank to bank in the chain).
+                    </p>
+                </div>
+            </Paper>
 
-                <h3><IconWorld size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 6 }} />Cover Method: Two Parallel Legs</h3>
-                <p>
-                    This simulator uses the <strong>cover method</strong> (<a href="https://www.swift.com/swift-resource/248681/download" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue-bright)' }}>SWIFT ISO 20022 Programme, p.34-36</a>).
-                    Two messages travel in parallel, linked by the same UETR:
-                </p>
-                <ul style={{ color: 'var(--ink-secondary)', lineHeight: 1.8, fontSize: '0.9rem' }}>
-                    <li><strong>Instruction leg (pacs.008):</strong> Goes DIRECT from Debtor Agent (A) → Creditor Agent (D). Carries the full payment details.</li>
-                    <li><strong>Cover leg (pacs.009 COV):</strong> Routes A → B → C → D through the correspondent chain. Carries the <code>UndrlygCstmrCdtTrf</code> element linking it to the pacs.008. Settles the actual funds.</li>
-                </ul>
-                <p>
-                    Party roles shift between the two messages: the Debtor Agent in the pacs.008 becomes the Debtor in the pacs.009 COV.
-                    The pacs.008 uses <code>SttlmMtd=COVE</code> to signal that a cover payment will follow.
-                </p>
+            <Paper className="brut-card" p="lg">
+                <div className="learn-section">
+                    <Title order={3} mb="sm">Cover Method (SttlmMtd = COVE)</Title>
+                    <p>
+                        The <strong>cover method</strong> splits a payment into two parallel messages, both linked by the same <strong>UETR</strong>:
+                    </p>
+                    <ul style={{ color: 'var(--ink-secondary)', lineHeight: 1.8, fontSize: '0.9rem' }}>
+                        <li><strong>Instruction leg (pacs.008):</strong> Goes <strong>DIRECT</strong> from Debtor Agent (A) → Creditor Agent (D). Carries the full payment details, remittance info, and debtor/creditor identifiers. Settlement method = <code>COVE</code>.</li>
+                        <li><strong>Cover leg (pacs.009 COV):</strong> Routes through the correspondent chain A → B → C → D. Carries the <code>UndrlygCstmrCdtTrf</code> element that links it to the pacs.008 via the same UETR. This leg <strong>settles the actual funds</strong>.</li>
+                    </ul>
+                    <div style={{ background: 'var(--surface-2)', padding: '12px 16px', borderRadius: 8, margin: '12px 0', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', lineHeight: 1.8 }}>
+                        <strong>Instruction:</strong> A ──────────────<sup>pacs.008 (DIRECT)</sup>──────────────→ D<br />
+                        <strong>Settlement:</strong> A →<sup>pacs.009 COV</sup>→ B →<sup>pacs.009 COV</sup>→ C →<sup>pacs.009 COV</sup>→ D
+                    </div>
+                    <p>
+                        <strong>Party role shift:</strong> A critical detail from the <a href="https://www.swift.com/swift-resource/248681/download" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue-bright)' }}>SWIFT ISO 20022 Programme (p.34)</a> — party roles change between the two messages:
+                    </p>
+                    <div className="table-scroll">
+                        <table className="ref-table">
+                            <thead>
+                                <tr><th>Role</th><th>In pacs.008</th><th>In pacs.009 COV</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Bank A</td><td>Debtor Agent</td><td><strong>Debtor</strong></td></tr>
+                                <tr><td>Bank D</td><td>Creditor Agent</td><td><strong>Creditor</strong></td></tr>
+                                <tr><td>Debtor (customer)</td><td>Debtor</td><td>Underlying Debtor</td></tr>
+                                <tr><td>Creditor (customer)</td><td>Creditor</td><td>Underlying Creditor</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--ink-secondary)' }}>
+                        <strong>Legacy equivalent:</strong> MT 103 (instruction, A→D direct) + MT 202 COV (cover, through chain).
+                    </p>
+                </div>
+            </Paper>
 
-                <h3><IconClock size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 6 }} />Time Zones & Settlement Windows</h3>
-                <p>
-                    One of the biggest hidden costs is <strong>time zone mismatch</strong>. RTGS systems (Fedwire, CHAPS, BOJ-NET)
-                    only operate during local business hours. A payment from Tokyo to New York hits an overnight gap where
-                    no settlement is possible — potentially adding 12+ hours to the journey.
-                </p>
+            {/* When to use which */}
+            <Paper className="brut-card" p="lg">
+                <div className="learn-section">
+                    <Title order={3} mb="sm">When to Choose Serial vs Cover</Title>
+                    <p>
+                        The choice between serial and cover depends on the banking relationships, corridor characteristics,
+                        and operational priorities:
+                    </p>
+                    <div className="table-scroll">
+                        <table className="ref-table">
+                            <thead>
+                                <tr><th>Factor</th><th>Serial</th><th>Cover</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><strong>Simplicity</strong></td><td>Single message chain — easier to implement and trace</td><td>Two parallel messages — more complex but more efficient</td></tr>
+                                <tr><td><strong>Information visibility</strong></td><td>Every bank in the chain sees full payment details</td><td>Only A and D see full details; intermediaries see only settlement info</td></tr>
+                                <tr><td><strong>Privacy / data minimization</strong></td><td>Lower — all intermediaries see debtor/creditor info</td><td><strong>Higher</strong> — intermediaries only see the cover leg (pacs.009)</td></tr>
+                                <tr><td><strong>Speed</strong></td><td>Sequential processing at each hop</td><td>Instruction arrives at D <strong>immediately</strong>; settlement follows in parallel</td></tr>
+                                <tr><td><strong>Reconciliation</strong></td><td>Simpler — single message to track</td><td>More complex — D must reconcile pacs.008 with incoming cover funds</td></tr>
+                                <tr><td><strong>Use of Market Infra</strong></td><td>Not typically routed via MI</td><td>Cover leg can settle through payment market infrastructure (RTGS)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                <h3><IconTrendingDown size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 6 }} />Why Costs Vary So Much</h3>
-                <p>
-                    Corridor costs range from 1.5% (major currency pairs like USD→EUR) to 8.78% (USA→Nigeria) due to:
-                </p>
-                <ul style={{ color: 'var(--ink-secondary)', lineHeight: 1.8, fontSize: '0.9rem' }}>
-                    <li><strong>Chain length:</strong> More hops = more fees (each intermediary takes a cut)</li>
-                    <li><strong>FX spread:</strong> Illiquid currency pairs have wider spreads</li>
-                    <li><strong>Compliance costs:</strong> High-risk corridors require enhanced due diligence</li>
-                    <li><strong>Trapped liquidity:</strong> Banks charge more for exotic nostro positions</li>
-                </ul>
-            </div>
-        </Paper>
+                    <h3 style={{ marginTop: 20 }}>Scenarios Where Each Method Makes Sense</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 12 }}>
+                        <div style={{ background: 'var(--surface-2)', padding: '14px 16px', borderRadius: 8, borderLeft: '3px solid var(--accent-blue)' }}>
+                            <Text size="sm" fw={700} mb={6}>Choose Serial When…</Text>
+                            <ul style={{ color: 'var(--ink-secondary)', fontSize: '0.85rem', lineHeight: 1.7, paddingLeft: 16, margin: 0 }}>
+                                <li>Short chain (2-3 hops) with known correspondents</li>
+                                <li>All parties need full payment details for compliance</li>
+                                <li>Simple treasury / low-value commercial payments</li>
+                                <li>Regulatory requirements mandate full chain visibility</li>
+                                <li>Bank has no direct SWIFT connectivity with beneficiary bank</li>
+                            </ul>
+                        </div>
+                        <div style={{ background: 'var(--surface-2)', padding: '14px 16px', borderRadius: 8, borderLeft: '3px solid var(--accent-green)' }}>
+                            <Text size="sm" fw={700} mb={6}>Choose Cover When…</Text>
+                            <ul style={{ color: 'var(--ink-secondary)', fontSize: '0.85rem', lineHeight: 1.7, paddingLeft: 16, margin: 0 }}>
+                                <li>Debtor Agent and Creditor Agent have direct SWIFT connectivity</li>
+                                <li>Privacy is important — minimize data exposed to intermediaries</li>
+                                <li>High-value payments where speed of instruction delivery matters</li>
+                                <li>Settlement through a Payment Market Infrastructure (RTGS)</li>
+                                <li>Complex corridors where the cover chain differs from the instruction path</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </Paper>
+
+            {/* ISO 20022 Messages */}
+            <Paper className="brut-card" p="lg">
+                <div className="learn-section">
+                    <h3><IconMail size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 6 }} />ISO 20022: The Message Standard</h3>
+                    <p>
+                        As of November 2025, SWIFT has fully migrated from legacy MT messages to ISO 20022 MX messages.
+                        The pacs.009 has two main use cases: as a core FI-to-FI credit transfer, and as a <code>COV</code> where it settles
+                        a pacs.008 — differentiated by the <code>UndrlygCstmrCdtTrf</code> element.
+                    </p>
+                    <div className="table-scroll">
+                        <table className="ref-table">
+                            <thead>
+                                <tr><th>Message</th><th>Name</th><th>Used In</th><th>Purpose</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td className="mono">pacs.008</td>
+                                    <td>FI to FI Customer Credit Transfer</td>
+                                    <td><Badge color="blue" size="sm">Serial + Cover</Badge></td>
+                                    <td>Customer payment instruction (hop-by-hop in serial, direct A→D in cover)</td>
+                                </tr>
+                                <tr>
+                                    <td className="mono">pacs.009</td>
+                                    <td>FI Credit Transfer</td>
+                                    <td><Badge color="blue" size="sm">Cover (COV)</Badge></td>
+                                    <td>Settlement via correspondent chain — contains <code>UndrlygCstmrCdtTrf</code>, same UETR links to pacs.008</td>
+                                </tr>
+                                <tr>
+                                    <td className="mono">pacs.002</td>
+                                    <td>Payment Status Report</td>
+                                    <td><Badge color="green" size="sm">Both</Badge></td>
+                                    <td>Status feedback: ACSP (accepted), ACCC (completed), RJCT (rejected)</td>
+                                </tr>
+                                <tr>
+                                    <td className="mono">camt.054</td>
+                                    <td>Debit/Credit Notification</td>
+                                    <td><Badge color="green" size="sm">Both</Badge></td>
+                                    <td>Nostro account booking confirmation for reconciliation</td>
+                                </tr>
+                                <tr>
+                                    <td className="mono">camt.056</td>
+                                    <td>Cancellation Request</td>
+                                    <td><Badge color="red" size="sm">Exception</Badge></td>
+                                    <td>Request to cancel a payment already in the chain</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3 style={{ marginTop: 20 }}><IconWorld size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 6 }} />SWIFT gpi & UETR</h3>
+                    <p>
+                        Every payment gets a <strong>UETR</strong> (Unique End-to-End Transaction Reference) — a UUID that tracks the
+                        payment across every hop. In the cover method, the <strong>same UETR</strong> appears in both the pacs.008 and pacs.009 COV,
+                        effectively interlinking the two parallel messages. 50% of gpi payments are credited within 30 minutes.
+                    </p>
+
+                    <h3><IconClock size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 6 }} />Time Zones & Settlement Windows</h3>
+                    <p>
+                        One of the biggest hidden costs is <strong>time zone mismatch</strong>. RTGS systems (Fedwire, CHAPS, BOJ-NET)
+                        only operate during local business hours. A payment from Tokyo to New York hits an overnight gap where
+                        no settlement is possible — potentially adding 12+ hours to the journey.
+                    </p>
+
+                    <h3><IconTrendingDown size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 6 }} />Why Costs Vary So Much</h3>
+                    <p>
+                        Corridor costs range from 1.5% (major currency pairs like USD→EUR) to 8.78% (USA→Nigeria) due to:
+                    </p>
+                    <ul style={{ color: 'var(--ink-secondary)', lineHeight: 1.8, fontSize: '0.9rem' }}>
+                        <li><strong>Chain length:</strong> More hops = more fees (each intermediary takes a cut)</li>
+                        <li><strong>FX spread:</strong> Illiquid currency pairs have wider spreads</li>
+                        <li><strong>Compliance costs:</strong> High-risk corridors require enhanced due diligence</li>
+                        <li><strong>Trapped liquidity:</strong> Banks charge more for exotic nostro positions</li>
+                    </ul>
+                </div>
+            </Paper>
+        </Stack>
     );
 }
 
@@ -472,10 +583,17 @@ export default function App() {
     const [currentStep, setCurrentStep] = useState<number>(-1);
     const [isPlaying, setIsPlaying] = useState(false);
     const [chargeBearer, setChargeBearer] = useState<ChargeBearer>('SHA');
+    const [method, setMethod] = useState<SettlementMethod>('serial');
 
     const corridor = useMemo(() =>
         CORRIDORS.find(c => c.id === selectedCorridor)!,
         [selectedCorridor]
+    );
+
+    // Derive steps from corridor based on selected method
+    const steps = useMemo(() =>
+        method === 'serial' ? corridor.serialSteps : corridor.coverSteps,
+        [corridor, method]
     );
 
     const selectCorridor = useCallback((id: string) => {
@@ -486,15 +604,21 @@ export default function App() {
         setIsPlaying(false);
     }, []);
 
+    const selectMethod = useCallback((m: string) => {
+        setMethod(m as SettlementMethod);
+        setCurrentStep(-1);
+        setIsPlaying(false);
+    }, []);
+
     const nextStep = useCallback(() => {
         setCurrentStep(prev => {
-            if (prev >= corridor.steps.length - 1) {
+            if (prev >= steps.length - 1) {
                 setIsPlaying(false);
                 return prev;
             }
             return prev + 1;
         });
-    }, [corridor]);
+    }, [steps]);
 
     const prevStep = useCallback(() => {
         setCurrentStep(prev => Math.max(-1, prev - 1));
@@ -507,14 +631,14 @@ export default function App() {
 
     // Auto-play
     const togglePlay = useCallback(() => {
-        if (currentStep >= corridor.steps.length - 1) {
+        if (currentStep >= steps.length - 1) {
             setCurrentStep(0);
             setIsPlaying(true);
         } else {
             setIsPlaying(prev => !prev);
             if (currentStep === -1) setCurrentStep(0);
         }
-    }, [currentStep, corridor]);
+    }, [currentStep, steps]);
 
     // Auto-advance timer — useEffect + ref to avoid stale closures
     const isPlayingRef = useRef(isPlaying);
@@ -530,7 +654,7 @@ export default function App() {
     const flowContainerRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (currentStep < 0 || !flowContainerRef.current) return;
-        const step = corridor.steps[currentStep];
+        const step = steps[currentStep];
         if (!step) return;
         // Scroll to center the "to" bank node
         const targetBankIdx = step.to;
@@ -544,10 +668,10 @@ export default function App() {
         const bankCenterPx = getNodeCX(targetBankIdx) * scale;
         const scrollTarget = bankCenterPx - el.clientWidth / 2;
         el.scrollTo({ left: Math.max(0, scrollTarget), behavior: 'smooth' });
-    }, [currentStep, corridor]);
+    }, [currentStep, steps, corridor]);
 
-    const isComplete = currentStep >= corridor.steps.length - 1;
-    const activeStep = currentStep >= 0 ? corridor.steps[currentStep] : null;
+    const isComplete = currentStep >= steps.length - 1;
+    const activeStep = currentStep >= 0 ? steps[currentStep] : null;
 
     return (
         <Box mih="100vh">
@@ -619,6 +743,30 @@ export default function App() {
                                 </Text>
                             </Group>
 
+                            {/* Settlement Method Toggle */}
+                            <Group gap="md" mt="md" align="flex-end" wrap="wrap">
+                                <Stack gap={4}>
+                                    <Text size="xs" fw={600} c="dimmed">Settlement Method</Text>
+                                    <SegmentedControl
+                                        value={method}
+                                        onChange={selectMethod}
+                                        data={[
+                                            { label: '🔗 Serial', value: 'serial' },
+                                            { label: '📨 Cover', value: 'cover' },
+                                        ]}
+                                        size="sm"
+                                        styles={{
+                                            root: { fontFamily: 'var(--font-mono)' },
+                                        }}
+                                    />
+                                </Stack>
+                                <Text size="xs" c="dimmed" pb={8} style={{ lineHeight: 1.5, maxWidth: 420 }}>
+                                    {method === 'serial'
+                                        ? '🔗 Serial (INDA): pacs.008 hops through each bank in sequence. Every intermediary sees full payment details. Simpler but slower.'
+                                        : '📨 Cover (COVE): pacs.008 goes DIRECT to beneficiary bank; pacs.009 COV settles through the chain in parallel. Faster instruction delivery, better privacy.'}
+                                </Text>
+                            </Group>
+
                             {/* Charge Allocation Explainer */}
                             <div className="charge-explainer" style={{ marginTop: 12 }}>
                                 <Text size="xs" c="dimmed" style={{ lineHeight: 1.5 }}>
@@ -632,15 +780,15 @@ export default function App() {
                         {/* Flow Visualization */}
                         <Paper className="brut-card" p="lg" mb="lg">
                             <Text size="sm" fw={700} mb="xs" tt="uppercase" c="dimmed" style={{ letterSpacing: '0.08em' }}>
-                                Payment Flow — {corridor.name}
+                                Payment Flow — {corridor.name} ({method === 'serial' ? 'Serial' : 'Cover'} Method)
                             </Text>
                             <div className="flow-container" ref={flowContainerRef}>
-                                <FlowVisualization corridor={corridor} currentStep={currentStep} />
+                                <FlowVisualization corridor={corridor} steps={steps} currentStep={currentStep} />
                             </div>
 
                             {/* Step Timeline */}
                             <div className="step-timeline">
-                                {corridor.steps.map((step, i) => (
+                                {steps.map((step, i) => (
                                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                         <Tooltip label={`${step.messageType}: ${step.description}`} withArrow position="top">
                                             <div
@@ -651,7 +799,7 @@ export default function App() {
                                                 {i < currentStep ? <IconCircleCheck size={14} /> : i + 1}
                                             </div>
                                         </Tooltip>
-                                        {i < corridor.steps.length - 1 && (
+                                        {i < steps.length - 1 && (
                                             <div className={`step-connector ${i < currentStep ? 'completed' : ''}`} />
                                         )}
                                     </div>
@@ -673,7 +821,7 @@ export default function App() {
                                     Next →
                                 </button>
                                 <span className="step-progress">
-                                    Step {Math.max(0, currentStep + 1)} / {corridor.steps.length}
+                                    Step {Math.max(0, currentStep + 1)} / {steps.length}
                                 </span>
                             </div>
                         </Paper>
@@ -703,7 +851,7 @@ export default function App() {
                                     : <>💱 Fee Breakdown — {chargeBearer === 'SHA' ? 'Shared' : chargeBearer === 'OUR' ? 'Sender Pays All' : 'Beneficiary Pays All'}</>
                                 }
                             </Text>
-                            <StatsSummary corridor={corridor} amount={amount} chargeBearer={chargeBearer} />
+                            <StatsSummary corridor={corridor} steps={steps} amount={amount} chargeBearer={chargeBearer} />
                         </Paper>
                     </Tabs.Panel>
 

@@ -4,7 +4,7 @@
 //
 // XSD Compliance Notes (pacs.008.001.13 / pacs.002.001.15 / camt.054.001.13):
 // - CdtTrfTxInf follows strict xs:sequence from CreditTransferTransaction70
-//   Order: PmtId → IntrBkSttlmAmt → InstdAmt → XchgRate → ChrgBr → ChrgsInf → InstgAgt → InstdAgt → DbtrAgt → CdtrAgt → Purp → RmtInf → RgltryRptg
+//   Order: PmtId → IntrBkSttlmAmt → InstdAmt → XchgRate → ChrgBr → ChrgsInf → InstgAgt → InstdAgt → Dbtr → DbtrAcct → DbtrAgt → CdtrAgt → Cdtr → CdtrAcct → Purp → RmtInf → RgltryRptg
 // - ChrgBr is MANDATORY in pacs.008 (ChargeBearerType1Code: DEBT|CRED|SHAR|SLEV)
 // - FIToFIPmtStsRpt requires mandatory GrpHdr with MsgId + CreDtTm
 // - TxInfAndSts (PaymentTransaction164) order: OrgnlEndToEndId → OrgnlUETR → TxSts → StsRsnInf → ChrgsInf → AccptncDtTm
@@ -52,7 +52,8 @@ export interface Corridor {
   totalCostPct: string;
   settlementTime: string;
   banks: Bank[];
-  steps: Step[];
+  serialSteps: Step[];
+  coverSteps: Step[];
 }
 
 const UETR = 'e8b7a4c2-9d3f-4e1a-b5c6-8f2d7a3e9b1c';
@@ -79,7 +80,133 @@ export const CORRIDORS: Corridor[] = [
       { name: 'HSBC London', bic: 'HSBCGB2L', country: 'United Kingdom', countryCode: 'GB', role: 'intermediary' },
       { name: 'Barclays', bic: 'BARCGB22', country: 'United Kingdom', countryCode: 'GB', role: 'beneficiary' },
     ],
-    steps: [
+    serialSteps: [
+      {
+        id: 1, from: 0, to: 1, direction: 'forward',
+        messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
+        description: 'DBS forwards pacs.008 to HSBC Singapore',
+        duration: '~2 min', fee: 35,
+        nostroAction: 'Debit: DBS debits customer SGD account',
+        xmlSnippet: `<CdtTrfTxInf>
+  <PmtId>
+    <InstrId>DBS-INS-0001</InstrId>
+    <EndToEndId>E2E-SGD-GBP-001</EndToEndId>
+    <UETR>${UETR}</UETR>
+  </PmtId>
+  <IntrBkSttlmAmt Ccy="SGD">50000.00</IntrBkSttlmAmt>
+  <ChrgBr>SHAR</ChrgBr>
+  <ChrgsInf>
+    <Amt Ccy="SGD">35.00</Amt>
+    <Agt><FinInstnId><BICFI>DBSSSGSG</BICFI></FinInstnId></Agt>
+  </ChrgsInf>
+  <InstgAgt><FinInstnId><BICFI>DBSSSGSG</BICFI></FinInstnId></InstgAgt>
+  <InstdAgt><FinInstnId><BICFI>HSBCSGSG</BICFI></FinInstnId></InstdAgt>
+  <Dbtr>
+    <Nm>Acme Trading Pte Ltd</Nm>
+    <PstlAdr><Ctry>SG</Ctry></PstlAdr>
+  </Dbtr>
+  <DbtrAgt><FinInstnId><BICFI>DBSSSGSG</BICFI></FinInstnId></DbtrAgt>
+  <CdtrAgt><FinInstnId><BICFI>BARCGB22</BICFI></FinInstnId></CdtrAgt>
+  <Cdtr>
+    <Nm>Crown and Co Solicitors</Nm>
+    <PstlAdr><Ctry>GB</Ctry></PstlAdr>
+  </Cdtr>
+</CdtTrfTxInf>`,
+        detail: 'Serial method: DBS validates KYC/AML, debits sender, deducts SGD 35 origination fee. pacs.008 forwarded hop-by-hop to HSBC SG (SttlmMtd=INDA). CdtrAgt identifies Barclays as final destination.',
+      },
+      {
+        id: 2, from: 1, to: 2, direction: 'forward',
+        messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
+        description: 'HSBC SG converts SGD→GBP, forwards to HSBC London',
+        duration: '4-8 hrs', fee: 25,
+        fxRate: 0.5812, fxFrom: 'SGD', fxTo: 'GBP',
+        nostroAction: 'Debit: HSBC SG nostro (SGD) → Credit: HSBC London nostro (GBP)',
+        xmlSnippet: `<CdtTrfTxInf>
+  <PmtId>
+    <InstrId>HSBC-SG-0001</InstrId>
+    <EndToEndId>E2E-SGD-GBP-001</EndToEndId>
+    <UETR>${UETR}</UETR>
+  </PmtId>
+  <IntrBkSttlmAmt Ccy="GBP">28985.00</IntrBkSttlmAmt>
+  <InstdAmt Ccy="SGD">49965.00</InstdAmt>
+  <XchgRate>0.5812</XchgRate>
+  <ChrgBr>SHAR</ChrgBr>
+  <ChrgsInf>
+    <Amt Ccy="SGD">25.00</Amt>
+    <Agt><FinInstnId><BICFI>HSBCSGSG</BICFI></FinInstnId></Agt>
+  </ChrgsInf>
+  <InstgAgt><FinInstnId><BICFI>HSBCSGSG</BICFI></FinInstnId></InstgAgt>
+  <InstdAgt><FinInstnId><BICFI>HSBCGB2L</BICFI></FinInstnId></InstdAgt>
+</CdtTrfTxInf>`,
+        detail: 'Serial method: HSBC SG converts SGD→GBP at 0.5812 (mid: 0.5832, spread 0.35%). Deducts SGD 25 bank processing fee. Forwards the same pacs.008 (with updated amounts) to HSBC London via intra-group network.',
+      },
+      {
+        id: 3, from: 2, to: 3, direction: 'forward',
+        messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
+        description: 'HSBC London settles with Barclays via CHAPS',
+        duration: '2-4 hrs', fee: 15,
+        nostroAction: 'Debit: HSBC London nostro → Credit: Barclays settlement via CHAPS',
+        xmlSnippet: `<CdtTrfTxInf>
+  <PmtId>
+    <InstrId>HSBC-LON-0001</InstrId>
+    <EndToEndId>E2E-SGD-GBP-001</EndToEndId>
+    <UETR>${UETR}</UETR>
+  </PmtId>
+  <IntrBkSttlmAmt Ccy="GBP">28970.00</IntrBkSttlmAmt>
+  <ChrgBr>SHAR</ChrgBr>
+  <ChrgsInf>
+    <Amt Ccy="GBP">15.00</Amt>
+    <Agt><FinInstnId><BICFI>HSBCGB2L</BICFI></FinInstnId></Agt>
+  </ChrgsInf>
+  <InstgAgt><FinInstnId><BICFI>HSBCGB2L</BICFI></FinInstnId></InstgAgt>
+  <InstdAgt><FinInstnId><BICFI>BARCGB22</BICFI></FinInstnId></InstdAgt>
+  <RmtInf><Ustrd>Payment for services - INV-2026-0042</Ustrd></RmtInf>
+</CdtTrfTxInf>`,
+        detail: 'Serial method: HSBC London deducts £15 bank handling fee, settles with Barclays via CHAPS (UK RTGS). Remittance info preserved. Final hop in the serial chain.',
+      },
+      {
+        id: 4, from: 3, to: 2, direction: 'backward',
+        messageType: 'pacs.002.001.15', messageName: 'Payment Status Report',
+        description: 'Barclays confirms credit to beneficiary',
+        duration: '~1 min',
+        xmlSnippet: `<FIToFIPmtStsRpt>
+  <GrpHdr>
+    <MsgId>BARC-STS-0001</MsgId>
+    <CreDtTm>2026-02-18T17:42:00+00:00</CreDtTm>
+  </GrpHdr>
+  <TxInfAndSts>
+    <OrgnlEndToEndId>E2E-SGD-GBP-001</OrgnlEndToEndId>
+    <OrgnlUETR>${UETR}</OrgnlUETR>
+    <TxSts>ACCC</TxSts>
+    <AccptncDtTm>2026-02-18T17:42:00+00:00</AccptncDtTm>
+  </TxInfAndSts>
+</FIToFIPmtStsRpt>`,
+        detail: 'Barclays sends ACCC (Accepted Settlement Completed) — beneficiary credited £28,970. Status relayed back through the chain.',
+      },
+      {
+        id: 5, from: 2, to: 0, direction: 'backward',
+        messageType: 'pacs.002.001.15', messageName: 'Payment Status Report (End-to-End)',
+        description: 'Final confirmation relayed to DBS',
+        duration: '~2 min',
+        xmlSnippet: `<FIToFIPmtStsRpt>
+  <GrpHdr>
+    <MsgId>HSBC-STS-0002</MsgId>
+    <CreDtTm>2026-02-18T17:44:00+00:00</CreDtTm>
+  </GrpHdr>
+  <TxInfAndSts>
+    <OrgnlEndToEndId>E2E-SGD-GBP-001</OrgnlEndToEndId>
+    <OrgnlUETR>${UETR}</OrgnlUETR>
+    <TxSts>ACCC</TxSts>
+    <ChrgsInf>
+      <Amt Ccy="SGD">75.00</Amt>
+      <Agt><FinInstnId><BICFI>HSBCSGSG</BICFI></FinInstnId></Agt>
+    </ChrgsInf>
+  </TxInfAndSts>
+</FIToFIPmtStsRpt>`,
+        detail: 'DBS receives final ACCC confirmation. Customer notified. Total journey: ~24 hrs. Total fees: SGD 75 + FX spread. Amount received: £28,970.',
+      },
+    ],
+    coverSteps: [
       {
         id: 1, from: 0, to: 3, direction: 'forward',
         messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
@@ -87,7 +214,7 @@ export const CORRIDORS: Corridor[] = [
         duration: '~2 min', fee: 35,
         nostroAction: 'Debit: DBS debits customer SGD account',
         // XSD: FIToFICstmrCdtTrf > GrpHdr + CdtTrfTxInf
-        // CdtTrfTxInf sequence: PmtId > IntrBkSttlmAmt > ChrgBr > ChrgsInf > InstgAgt > InstdAgt > DbtrAgt > CdtrAgt
+        // CdtTrfTxInf sequence: PmtId > IntrBkSttlmAmt > ChrgBr > ChrgsInf > InstgAgt > InstdAgt > Dbtr > DbtrAgt > CdtrAgt > Cdtr
         xmlSnippet: `<FIToFICstmrCdtTrf>
   <GrpHdr>
     <MsgId>DBS-2026021800001</MsgId>
@@ -111,8 +238,16 @@ export const CORRIDORS: Corridor[] = [
     </ChrgsInf>
     <InstgAgt><FinInstnId><BICFI>DBSSSGSG</BICFI></FinInstnId></InstgAgt>
     <InstdAgt><FinInstnId><BICFI>BARCGB22</BICFI></FinInstnId></InstdAgt>
+    <Dbtr>
+      <Nm>Acme Trading Pte Ltd</Nm>
+      <PstlAdr><Ctry>SG</Ctry></PstlAdr>
+    </Dbtr>
     <DbtrAgt><FinInstnId><BICFI>DBSSSGSG</BICFI></FinInstnId></DbtrAgt>
     <CdtrAgt><FinInstnId><BICFI>BARCGB22</BICFI></FinInstnId></CdtrAgt>
+    <Cdtr>
+      <Nm>Crown and Co Solicitors</Nm>
+      <PstlAdr><Ctry>GB</Ctry></PstlAdr>
+    </Cdtr>
   </CdtTrfTxInf>
 </FIToFICstmrCdtTrf>`,
         detail: 'DBS validates KYC/AML, debits sender account, generates UETR, sends pacs.008 DIRECT to Barclays (cover method — instruction leg). Settlement method COVE triggers parallel pacs.009 COV cover payment.',
@@ -175,6 +310,10 @@ export const CORRIDORS: Corridor[] = [
         // XSD: BkToCstmrDbtCdtNtfctn > Ntfctn > Ntry (ReportEntry15)
         // ReportEntry15 sequence: Amt > CdtDbtInd > Sts > BkTxCd (mandatory!) > NtryDtls
         xmlSnippet: `<BkToCstmrDbtCdtNtfctn>
+  <GrpHdr>
+    <MsgId>HSBC-NTF-GRP-0001</MsgId>
+    <CreDtTm>2026-02-18T17:30:00+00:00</CreDtTm>
+  </GrpHdr>
   <Ntfctn>
     <Id>HSBC-NTF-0001</Id>
     <Acct><Id><IBAN>GB29HSBC40120712345678</IBAN></Id></Acct>
@@ -288,7 +427,109 @@ export const CORRIDORS: Corridor[] = [
       { name: 'Standard Chartered', bic: 'SCBLGB2L', country: 'United Kingdom', countryCode: 'GB', role: 'intermediary' },
       { name: 'Guaranty Trust Bank', bic: 'GTBINGLA', country: 'Nigeria', countryCode: 'NG', role: 'beneficiary' },
     ],
-    steps: [
+    serialSteps: [
+      {
+        id: 1, from: 0, to: 1, direction: 'forward',
+        messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
+        description: 'JPMorgan forwards pacs.008 to Citibank',
+        duration: '~5 min', fee: 45,
+        nostroAction: 'Debit: JPM debits sender USD account',
+        xmlSnippet: `<CdtTrfTxInf>
+  <PmtId>
+    <InstrId>JPM-INS-0001</InstrId>
+    <EndToEndId>E2E-USD-NGN-001</EndToEndId>
+    <UETR>${UETR}</UETR>
+  </PmtId>
+  <IntrBkSttlmAmt Ccy="USD">955.00</IntrBkSttlmAmt>
+  <ChrgBr>SHAR</ChrgBr>
+  <ChrgsInf>
+    <Amt Ccy="USD">45.00</Amt>
+    <Agt><FinInstnId><BICFI>CHASUS33</BICFI></FinInstnId></Agt>
+  </ChrgsInf>
+  <InstgAgt><FinInstnId><BICFI>CHASUS33</BICFI></FinInstnId></InstgAgt>
+  <InstdAgt><FinInstnId><BICFI>CITIUS33</BICFI></FinInstnId></InstdAgt>
+  <Dbtr>
+    <Nm>GlobalCorp Inc</Nm>
+    <PstlAdr><Ctry>US</Ctry></PstlAdr>
+  </Dbtr>
+  <DbtrAgt><FinInstnId><BICFI>CHASUS33</BICFI></FinInstnId></DbtrAgt>
+  <CdtrAgt><FinInstnId><BICFI>GTBINGLA</BICFI></FinInstnId></CdtrAgt>
+  <Cdtr>
+    <Nm>Lagos Import Co Ltd</Nm>
+    <PstlAdr><Ctry>NG</Ctry></PstlAdr>
+  </Cdtr>
+</CdtTrfTxInf>`,
+        detail: 'Serial method: JPMorgan validates enhanced KYC (Nigeria = high-risk corridor), debits $1,000, deducts $45 origination fee. pacs.008 forwarded hop-by-hop to Citibank (SttlmMtd=INDA).',
+      },
+      {
+        id: 2, from: 1, to: 2, direction: 'forward',
+        messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
+        description: 'Citibank routes via Standard Chartered (London)',
+        duration: '8-24 hrs', fee: 35,
+        nostroAction: 'Debit: Citi USD nostro → Credit: StanChart USD nostro',
+        xmlSnippet: `<CdtTrfTxInf>
+  <PmtId>
+    <InstrId>CITI-SER-0001</InstrId>
+    <EndToEndId>E2E-USD-NGN-001</EndToEndId>
+    <UETR>${UETR}</UETR>
+  </PmtId>
+  <IntrBkSttlmAmt Ccy="USD">920.00</IntrBkSttlmAmt>
+  <ChrgBr>SHAR</ChrgBr>
+  <ChrgsInf>
+    <Amt Ccy="USD">35.00</Amt>
+    <Agt><FinInstnId><BICFI>CITIUS33</BICFI></FinInstnId></Agt>
+  </ChrgsInf>
+  <InstgAgt><FinInstnId><BICFI>CITIUS33</BICFI></FinInstnId></InstgAgt>
+  <InstdAgt><FinInstnId><BICFI>SCBLGB2L</BICFI></FinInstnId></InstdAgt>
+</CdtTrfTxInf>`,
+        detail: 'Serial method: Citi deducts $35 bank processing fee. Routes via London (StanChart) as intermediary. Settlement via Fedwire for USD leg.',
+      },
+      {
+        id: 3, from: 2, to: 3, direction: 'forward',
+        messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
+        description: 'StanChart converts USD→NGN, settles with GTBank',
+        duration: '12-48 hrs', fee: 25,
+        fxRate: 1580.50, fxFrom: 'USD', fxTo: 'NGN',
+        nostroAction: 'Debit: StanChart USD → Credit: GTBank NGN nostro',
+        xmlSnippet: `<CdtTrfTxInf>
+  <PmtId>
+    <InstrId>SCBL-SER-0001</InstrId>
+    <EndToEndId>E2E-USD-NGN-001</EndToEndId>
+    <UETR>${UETR}</UETR>
+  </PmtId>
+  <IntrBkSttlmAmt Ccy="NGN">1414047.50</IntrBkSttlmAmt>
+  <InstdAmt Ccy="USD">895.00</InstdAmt>
+  <XchgRate>1580.50</XchgRate>
+  <ChrgBr>SHAR</ChrgBr>
+  <ChrgsInf>
+    <Amt Ccy="USD">25.00</Amt>
+    <Agt><FinInstnId><BICFI>SCBLGB2L</BICFI></FinInstnId></Agt>
+  </ChrgsInf>
+  <InstgAgt><FinInstnId><BICFI>SCBLGB2L</BICFI></FinInstnId></InstgAgt>
+  <InstdAgt><FinInstnId><BICFI>GTBINGLA</BICFI></FinInstnId></InstdAgt>
+</CdtTrfTxInf>`,
+        detail: 'Serial method: StanChart converts at 1,580.50 (mid: 1,649.20, spread 4.2%). $25 fee. NGN settlement depends on CBN clearing hours.',
+      },
+      {
+        id: 4, from: 3, to: 0, direction: 'backward',
+        messageType: 'pacs.002.001.15', messageName: 'Payment Status Report',
+        description: 'GTBank confirms credit, relayed to JPMorgan',
+        duration: '~5 min',
+        xmlSnippet: `<FIToFIPmtStsRpt>
+  <GrpHdr>
+    <MsgId>GTB-STS-0001</MsgId>
+    <CreDtTm>2026-02-20T14:30:00+01:00</CreDtTm>
+  </GrpHdr>
+  <TxInfAndSts>
+    <OrgnlUETR>${UETR}</OrgnlUETR>
+    <TxSts>ACCC</TxSts>
+    <AccptncDtTm>2026-02-20T14:30:00+01:00</AccptncDtTm>
+  </TxInfAndSts>
+</FIToFIPmtStsRpt>`,
+        detail: 'GTBank credits beneficiary ₦1,414,047.50. ACCC sent back. Total: $1,000 → ₦1,414,047. Cost: 8.78%.',
+      },
+    ],
+    coverSteps: [
       {
         id: 1, from: 0, to: 3, direction: 'forward',
         messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
@@ -309,8 +550,16 @@ export const CORRIDORS: Corridor[] = [
   </ChrgsInf>
   <InstgAgt><FinInstnId><BICFI>CHASUS33</BICFI></FinInstnId></InstgAgt>
   <InstdAgt><FinInstnId><BICFI>GTBINGLA</BICFI></FinInstnId></InstdAgt>
+  <Dbtr>
+    <Nm>GlobalCorp Inc</Nm>
+    <PstlAdr><Ctry>US</Ctry></PstlAdr>
+  </Dbtr>
   <DbtrAgt><FinInstnId><BICFI>CHASUS33</BICFI></FinInstnId></DbtrAgt>
   <CdtrAgt><FinInstnId><BICFI>GTBINGLA</BICFI></FinInstnId></CdtrAgt>
+  <Cdtr>
+    <Nm>Lagos Import Co Ltd</Nm>
+    <PstlAdr><Ctry>NG</Ctry></PstlAdr>
+  </Cdtr>
 </CdtTrfTxInf>`,
         detail: 'Cover method instruction leg: JPMorgan validates enhanced KYC (Nigeria = high-risk corridor), debits $1,000, deducts $45 origination fee. pacs.008 goes DIRECT to GTBank — settlement follows separately via pacs.009 COV through correspondents.',
       },
@@ -431,7 +680,113 @@ export const CORRIDORS: Corridor[] = [
       { name: 'Deutsche Bank NY', bic: 'DEUTUS33', country: 'United States', countryCode: 'US', role: 'intermediary' },
       { name: 'Wells Fargo', bic: 'WFBIUS6S', country: 'United States', countryCode: 'US', role: 'beneficiary' },
     ],
-    steps: [
+    serialSteps: [
+      {
+        id: 1, from: 0, to: 1, direction: 'forward',
+        messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
+        description: 'SBI forwards pacs.008 to Deutsche Bank Mumbai',
+        duration: '~10 min', fee: 2500,
+        nostroAction: 'Debit: SBI debits sender INR account',
+        xmlSnippet: `<CdtTrfTxInf>
+  <PmtId>
+    <InstrId>SBI-INS-0001</InstrId>
+    <EndToEndId>E2E-INR-USD-001</EndToEndId>
+    <UETR>${UETR}</UETR>
+  </PmtId>
+  <IntrBkSttlmAmt Ccy="INR">497500.00</IntrBkSttlmAmt>
+  <ChrgBr>SHAR</ChrgBr>
+  <ChrgsInf>
+    <Amt Ccy="INR">2500.00</Amt>
+    <Agt><FinInstnId><BICFI>SBININBB</BICFI></FinInstnId></Agt>
+  </ChrgsInf>
+  <InstgAgt><FinInstnId><BICFI>SBININBB</BICFI></FinInstnId></InstgAgt>
+  <InstdAgt><FinInstnId><BICFI>DEUTINBB</BICFI></FinInstnId></InstdAgt>
+  <Dbtr>
+    <Nm>Tata Industries Ltd</Nm>
+    <PstlAdr><Ctry>IN</Ctry></PstlAdr>
+  </Dbtr>
+  <DbtrAgt><FinInstnId><BICFI>SBININBB</BICFI></FinInstnId></DbtrAgt>
+  <CdtrAgt><FinInstnId><BICFI>WFBIUS6S</BICFI></FinInstnId></CdtrAgt>
+  <Cdtr>
+    <Nm>TechStart Inc</Nm>
+    <PstlAdr><Ctry>US</Ctry></PstlAdr>
+  </Cdtr>
+  <RgltryRptg>
+    <DbtCdtRptgInd>DEBT</DbtCdtRptgInd>
+    <Authrty><Nm>Reserve Bank of India</Nm></Authrty>
+  </RgltryRptg>
+</CdtTrfTxInf>`,
+        detail: 'Serial method: SBI validates LRS ($250K/year limit), files Form A2 with RBI, debits ₹5,00,000 and deducts ₹2,500 fee. pacs.008 forwarded hop-by-hop to Deutsche Mumbai (SttlmMtd=INDA).',
+      },
+      {
+        id: 2, from: 1, to: 2, direction: 'forward',
+        messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
+        description: 'Deutsche Mumbai converts INR→USD, routes to DB NY',
+        duration: '4-8 hrs', fee: 1500,
+        fxRate: 0.01195, fxFrom: 'INR', fxTo: 'USD',
+        nostroAction: 'Debit: DB Mumbai INR → Credit: DB NY USD nostro',
+        xmlSnippet: `<CdtTrfTxInf>
+  <PmtId>
+    <InstrId>DEUT-MUM-0001</InstrId>
+    <EndToEndId>E2E-INR-USD-001</EndToEndId>
+    <UETR>${UETR}</UETR>
+  </PmtId>
+  <IntrBkSttlmAmt Ccy="USD">5927.13</IntrBkSttlmAmt>
+  <InstdAmt Ccy="INR">496000.00</InstdAmt>
+  <XchgRate>0.01195</XchgRate>
+  <ChrgBr>SHAR</ChrgBr>
+  <ChrgsInf>
+    <Amt Ccy="INR">1500.00</Amt>
+    <Agt><FinInstnId><BICFI>DEUTINBB</BICFI></FinInstnId></Agt>
+  </ChrgsInf>
+  <InstgAgt><FinInstnId><BICFI>DEUTINBB</BICFI></FinInstnId></InstgAgt>
+  <InstdAgt><FinInstnId><BICFI>DEUTUS33</BICFI></FinInstnId></InstdAgt>
+</CdtTrfTxInf>`,
+        detail: 'Serial method: DB Mumbai converts at 0.01195 INR/USD (mid: 0.01217, spread 1.8%). ₹1,500 fee. Intra-group transfer to DB New York.',
+      },
+      {
+        id: 3, from: 2, to: 3, direction: 'forward',
+        messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
+        description: 'Deutsche NY settles with Wells Fargo via Fedwire',
+        duration: '2-4 hrs', fee: 12,
+        nostroAction: 'Debit: DB NY USD → Credit: Wells Fargo via Fedwire',
+        xmlSnippet: `<CdtTrfTxInf>
+  <PmtId>
+    <InstrId>DEUT-NY-0001</InstrId>
+    <EndToEndId>E2E-INR-USD-001</EndToEndId>
+    <UETR>${UETR}</UETR>
+  </PmtId>
+  <IntrBkSttlmAmt Ccy="USD">5915.13</IntrBkSttlmAmt>
+  <ChrgBr>SHAR</ChrgBr>
+  <ChrgsInf>
+    <Amt Ccy="USD">12.00</Amt>
+    <Agt><FinInstnId><BICFI>DEUTUS33</BICFI></FinInstnId></Agt>
+  </ChrgsInf>
+  <InstgAgt><FinInstnId><BICFI>DEUTUS33</BICFI></FinInstnId></InstgAgt>
+  <InstdAgt><FinInstnId><BICFI>WFBIUS6S</BICFI></FinInstnId></InstdAgt>
+</CdtTrfTxInf>`,
+        detail: 'Serial method: DB NY settles with Wells Fargo via Fedwire (immediate finality). $12 fee. Final hop.',
+      },
+      {
+        id: 4, from: 3, to: 0, direction: 'backward',
+        messageType: 'pacs.002.001.15', messageName: 'Payment Status Report',
+        description: 'Wells Fargo confirms credit, relayed to SBI',
+        duration: '~3 min',
+        xmlSnippet: `<FIToFIPmtStsRpt>
+  <GrpHdr>
+    <MsgId>WFBI-STS-0001</MsgId>
+    <CreDtTm>2026-02-18T18:15:00-05:00</CreDtTm>
+  </GrpHdr>
+  <TxInfAndSts>
+    <OrgnlUETR>${UETR}</OrgnlUETR>
+    <TxSts>ACCC</TxSts>
+    <AccptncDtTm>2026-02-18T18:15:00-05:00</AccptncDtTm>
+  </TxInfAndSts>
+</FIToFIPmtStsRpt>`,
+        detail: 'Wells Fargo credits $5,915.13. ACCC relayed back. Total: ₹5,00,000 → $5,915.13 (5.12% cost).',
+      },
+    ],
+    coverSteps: [
       {
         id: 1, from: 0, to: 3, direction: 'forward',
         messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
@@ -452,8 +807,16 @@ export const CORRIDORS: Corridor[] = [
   </ChrgsInf>
   <InstgAgt><FinInstnId><BICFI>SBININBB</BICFI></FinInstnId></InstgAgt>
   <InstdAgt><FinInstnId><BICFI>WFBIUS6S</BICFI></FinInstnId></InstdAgt>
+  <Dbtr>
+    <Nm>Tata Industries Ltd</Nm>
+    <PstlAdr><Ctry>IN</Ctry></PstlAdr>
+  </Dbtr>
   <DbtrAgt><FinInstnId><BICFI>SBININBB</BICFI></FinInstnId></DbtrAgt>
   <CdtrAgt><FinInstnId><BICFI>WFBIUS6S</BICFI></FinInstnId></CdtrAgt>
+  <Cdtr>
+    <Nm>TechStart Inc</Nm>
+    <PstlAdr><Ctry>US</Ctry></PstlAdr>
+  </Cdtr>
   <RgltryRptg>
     <DbtCdtRptgInd>DEBT</DbtCdtRptgInd>
     <Authrty><Nm>Reserve Bank of India</Nm></Authrty>
@@ -576,7 +939,110 @@ export const CORRIDORS: Corridor[] = [
       { name: 'Standard Chartered Manila', bic: 'SCBLPHMM', country: 'Philippines', countryCode: 'PH', role: 'intermediary' },
       { name: 'BDO Unibank', bic: 'ABORPHMM', country: 'Philippines', countryCode: 'PH', role: 'beneficiary' },
     ],
-    steps: [
+    serialSteps: [
+      {
+        id: 1, from: 0, to: 1, direction: 'forward',
+        messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
+        description: 'Emirates NBD forwards pacs.008 to StanChart Dubai',
+        duration: '~5 min', fee: 25,
+        nostroAction: 'Debit: ENBD debits sender AED account',
+        xmlSnippet: `<CdtTrfTxInf>
+  <PmtId>
+    <InstrId>ENBD-INS-0001</InstrId>
+    <EndToEndId>E2E-AED-PHP-001</EndToEndId>
+    <UETR>${UETR}</UETR>
+  </PmtId>
+  <IntrBkSttlmAmt Ccy="AED">4975.00</IntrBkSttlmAmt>
+  <ChrgBr>SHAR</ChrgBr>
+  <ChrgsInf>
+    <Amt Ccy="AED">25.00</Amt>
+    <Agt><FinInstnId><BICFI>ABORAEADXXX</BICFI></FinInstnId></Agt>
+  </ChrgsInf>
+  <InstgAgt><FinInstnId><BICFI>ABORAEADXXX</BICFI></FinInstnId></InstgAgt>
+  <InstdAgt><FinInstnId><BICFI>SCBLAEAD</BICFI></FinInstnId></InstdAgt>
+  <Dbtr>
+    <Nm>Al Rasheed Trading LLC</Nm>
+    <PstlAdr><Ctry>AE</Ctry></PstlAdr>
+  </Dbtr>
+  <DbtrAgt><FinInstnId><BICFI>ABORAEADXXX</BICFI></FinInstnId></DbtrAgt>
+  <CdtrAgt><FinInstnId><BICFI>ABORPHMM</BICFI></FinInstnId></CdtrAgt>
+  <Cdtr>
+    <Nm>Maria Dela Cruz</Nm>
+    <PstlAdr><Ctry>PH</Ctry></PstlAdr>
+  </Cdtr>
+  <Purp><Cd>BEXP</Cd></Purp>
+</CdtTrfTxInf>`,
+        detail: 'Serial method: ENBD processes OFW remittance (UAE→PH major corridor). Purpose code BEXP. pacs.008 forwarded hop-by-hop to StanChart Dubai (SttlmMtd=INDA).',
+      },
+      {
+        id: 2, from: 1, to: 2, direction: 'forward',
+        messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
+        description: 'StanChart Dubai converts AED→PHP, routes to Manila',
+        duration: '8-16 hrs', fee: 18,
+        fxRate: 15.24, fxFrom: 'AED', fxTo: 'PHP',
+        nostroAction: 'Debit: StanChart AED nostro → Credit: StanChart PHP nostro',
+        xmlSnippet: `<CdtTrfTxInf>
+  <PmtId>
+    <InstrId>SCBL-DXB-0001</InstrId>
+    <EndToEndId>E2E-AED-PHP-001</EndToEndId>
+    <UETR>${UETR}</UETR>
+  </PmtId>
+  <IntrBkSttlmAmt Ccy="PHP">75518.52</IntrBkSttlmAmt>
+  <InstdAmt Ccy="AED">4957.00</InstdAmt>
+  <XchgRate>15.24</XchgRate>
+  <ChrgBr>SHAR</ChrgBr>
+  <ChrgsInf>
+    <Amt Ccy="AED">18.00</Amt>
+    <Agt><FinInstnId><BICFI>SCBLAEAD</BICFI></FinInstnId></Agt>
+  </ChrgsInf>
+  <InstgAgt><FinInstnId><BICFI>SCBLAEAD</BICFI></FinInstnId></InstgAgt>
+  <InstdAgt><FinInstnId><BICFI>SCBLPHMM</BICFI></FinInstnId></InstdAgt>
+</CdtTrfTxInf>`,
+        detail: 'Serial method: StanChart Dubai FX at 15.24 (mid: 15.56, spread 2.1%). AED 18 fee. Intra-group transfer to Manila. Good time zone overlap (GMT+4 → GMT+8).',
+      },
+      {
+        id: 3, from: 2, to: 3, direction: 'forward',
+        messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
+        description: 'StanChart Manila settles with BDO via PhilPaSS',
+        duration: '2-4 hrs', fee: 10,
+        nostroAction: 'Debit: StanChart PHP → Credit: BDO via PhilPaSS (RTGS)',
+        xmlSnippet: `<CdtTrfTxInf>
+  <PmtId>
+    <InstrId>SCBL-MNL-0001</InstrId>
+    <EndToEndId>E2E-AED-PHP-001</EndToEndId>
+    <UETR>${UETR}</UETR>
+  </PmtId>
+  <IntrBkSttlmAmt Ccy="PHP">75008.52</IntrBkSttlmAmt>
+  <ChrgBr>SHAR</ChrgBr>
+  <ChrgsInf>
+    <Amt Ccy="PHP">510.00</Amt>
+    <Agt><FinInstnId><BICFI>SCBLPHMM</BICFI></FinInstnId></Agt>
+  </ChrgsInf>
+  <InstgAgt><FinInstnId><BICFI>SCBLPHMM</BICFI></FinInstnId></InstgAgt>
+  <InstdAgt><FinInstnId><BICFI>ABORPHMM</BICFI></FinInstnId></InstdAgt>
+</CdtTrfTxInf>`,
+        detail: 'Serial method: StanChart Manila settles with BDO via PhilPaSS (RTGS). ₱510 fee (~$10). Final hop.',
+      },
+      {
+        id: 4, from: 3, to: 0, direction: 'backward',
+        messageType: 'pacs.002.001.15', messageName: 'Payment Status Report',
+        description: 'BDO confirms credit, relayed to Emirates NBD',
+        duration: '~3 min',
+        xmlSnippet: `<FIToFIPmtStsRpt>
+  <GrpHdr>
+    <MsgId>BDO-STS-0001</MsgId>
+    <CreDtTm>2026-02-19T16:30:00+08:00</CreDtTm>
+  </GrpHdr>
+  <TxInfAndSts>
+    <OrgnlUETR>${UETR}</OrgnlUETR>
+    <TxSts>ACCC</TxSts>
+    <AccptncDtTm>2026-02-19T16:30:00+08:00</AccptncDtTm>
+  </TxInfAndSts>
+</FIToFIPmtStsRpt>`,
+        detail: 'BDO credits ₱75,008.52. OFW family receives funds. AED 5,000 → ₱75,008. Cost: 3.45%.',
+      },
+    ],
+    coverSteps: [
       {
         id: 1, from: 0, to: 3, direction: 'forward',
         messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
@@ -597,8 +1063,16 @@ export const CORRIDORS: Corridor[] = [
   </ChrgsInf>
   <InstgAgt><FinInstnId><BICFI>ABORAEADXXX</BICFI></FinInstnId></InstgAgt>
   <InstdAgt><FinInstnId><BICFI>ABORPHMM</BICFI></FinInstnId></InstdAgt>
+  <Dbtr>
+    <Nm>Al Rasheed Trading LLC</Nm>
+    <PstlAdr><Ctry>AE</Ctry></PstlAdr>
+  </Dbtr>
   <DbtrAgt><FinInstnId><BICFI>ABORAEADXXX</BICFI></FinInstnId></DbtrAgt>
   <CdtrAgt><FinInstnId><BICFI>ABORPHMM</BICFI></FinInstnId></CdtrAgt>
+  <Cdtr>
+    <Nm>Maria Dela Cruz</Nm>
+    <PstlAdr><Ctry>PH</Ctry></PstlAdr>
+  </Cdtr>
   <Purp><Cd>BEXP</Cd></Purp>
 </CdtTrfTxInf>`,
         detail: 'Cover method instruction leg: ENBD processes remittance (UAE→PH is a major OFW corridor — 2.1M Filipino workers). Purpose code BEXP. pacs.008 goes DIRECT to BDO — settlement follows via pacs.009 COV through StanChart.',
@@ -718,7 +1192,112 @@ export const CORRIDORS: Corridor[] = [
       { name: 'HSBC New York', bic: 'MRMDUS33', country: 'United States', countryCode: 'US', role: 'intermediary' },
       { name: 'BBVA México', bic: 'BCMRMXMM', country: 'Mexico', countryCode: 'MX', role: 'beneficiary' },
     ],
-    steps: [
+    serialSteps: [
+      {
+        id: 1, from: 0, to: 1, direction: 'forward',
+        messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
+        description: 'MUFG forwards pacs.008 to HSBC Tokyo',
+        duration: '~5 min', fee: 5500,
+        nostroAction: 'Debit: MUFG debits sender JPY account',
+        xmlSnippet: `<CdtTrfTxInf>
+  <PmtId>
+    <InstrId>MUFG-INS-0001</InstrId>
+    <EndToEndId>E2E-JPY-MXN-001</EndToEndId>
+    <UETR>${UETR}</UETR>
+  </PmtId>
+  <IntrBkSttlmAmt Ccy="JPY">994500.00</IntrBkSttlmAmt>
+  <ChrgBr>SHAR</ChrgBr>
+  <ChrgsInf>
+    <Amt Ccy="JPY">5500.00</Amt>
+    <Agt><FinInstnId><BICFI>BOTKJPJT</BICFI></FinInstnId></Agt>
+  </ChrgsInf>
+  <InstgAgt><FinInstnId><BICFI>BOTKJPJT</BICFI></FinInstnId></InstgAgt>
+  <InstdAgt><FinInstnId><BICFI>HSBCJPJT</BICFI></FinInstnId></InstdAgt>
+  <Dbtr>
+    <Nm>Yamato Corp</Nm>
+    <PstlAdr><Ctry>JP</Ctry></PstlAdr>
+  </Dbtr>
+  <DbtrAgt><FinInstnId><BICFI>BOTKJPJT</BICFI></FinInstnId></DbtrAgt>
+  <CdtrAgt><FinInstnId><BICFI>BCMRMXMM</BICFI></FinInstnId></CdtrAgt>
+  <Cdtr>
+    <Nm>Ciudad Automotive SA de CV</Nm>
+    <PstlAdr><Ctry>MX</Ctry></PstlAdr>
+  </Cdtr>
+</CdtTrfTxInf>`,
+        detail: 'Serial method: MUFG debits ¥1,000,000, deducts ¥5,500 fee. pacs.008 forwarded to HSBC Tokyo (SttlmMtd=INDA). Exotic pair requires double FX (JPY→USD→MXN).',
+      },
+      {
+        id: 2, from: 1, to: 2, direction: 'forward',
+        messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
+        description: 'HSBC Tokyo converts JPY→USD, routes to HSBC NY',
+        duration: '8-16 hrs', fee: 4000,
+        fxRate: 0.006557, fxFrom: 'JPY', fxTo: 'USD',
+        nostroAction: 'Debit: HSBC JPY nostro → Credit: HSBC NY USD nostro',
+        xmlSnippet: `<CdtTrfTxInf>
+  <PmtId>
+    <InstrId>HSBC-TKY-0001</InstrId>
+    <EndToEndId>E2E-JPY-MXN-001</EndToEndId>
+    <UETR>${UETR}</UETR>
+  </PmtId>
+  <IntrBkSttlmAmt Ccy="USD">6492.14</IntrBkSttlmAmt>
+  <InstdAmt Ccy="JPY">990500.00</InstdAmt>
+  <XchgRate>0.006557</XchgRate>
+  <ChrgBr>SHAR</ChrgBr>
+  <ChrgsInf>
+    <Amt Ccy="JPY">4000.00</Amt>
+    <Agt><FinInstnId><BICFI>HSBCJPJT</BICFI></FinInstnId></Agt>
+  </ChrgsInf>
+  <InstgAgt><FinInstnId><BICFI>HSBCJPJT</BICFI></FinInstnId></InstgAgt>
+  <InstdAgt><FinInstnId><BICFI>MRMDUS33</BICFI></FinInstnId></InstdAgt>
+</CdtTrfTxInf>`,
+        detail: 'Serial method: First FX hop JPY→USD at 0.006557. ¥4,000 fee. Time zone gap: Tokyo closes at 15:00 JST, NY opens at 09:00 EST — potential overnight delay.',
+      },
+      {
+        id: 3, from: 2, to: 3, direction: 'forward',
+        messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
+        description: 'HSBC NY converts USD→MXN, settles with BBVA via SPEI',
+        duration: '12-24 hrs', fee: 2000,
+        fxRate: 17.41, fxFrom: 'USD', fxTo: 'MXN',
+        nostroAction: 'Debit: HSBC NY USD → Credit: BBVA via SPEI (Mexico RTGS)',
+        xmlSnippet: `<CdtTrfTxInf>
+  <PmtId>
+    <InstrId>HSBC-NY-0001</InstrId>
+    <EndToEndId>E2E-JPY-MXN-001</EndToEndId>
+    <UETR>${UETR}</UETR>
+  </PmtId>
+  <IntrBkSttlmAmt Ccy="MXN">112367.48</IntrBkSttlmAmt>
+  <InstdAmt Ccy="USD">6452.14</InstdAmt>
+  <XchgRate>17.41</XchgRate>
+  <ChrgBr>SHAR</ChrgBr>
+  <ChrgsInf>
+    <Amt Ccy="USD">40.00</Amt>
+    <Agt><FinInstnId><BICFI>MRMDUS33</BICFI></FinInstnId></Agt>
+  </ChrgsInf>
+  <InstgAgt><FinInstnId><BICFI>MRMDUS33</BICFI></FinInstnId></InstgAgt>
+  <InstdAgt><FinInstnId><BICFI>BCMRMXMM</BICFI></FinInstnId></InstdAgt>
+</CdtTrfTxInf>`,
+        detail: 'Serial method: Second FX hop USD→MXN at 17.41. $40 fee. Settlement via SPEI (07:00-17:30 CST). Combined FX spread: 2.8%.',
+      },
+      {
+        id: 4, from: 3, to: 0, direction: 'backward',
+        messageType: 'pacs.002.001.15', messageName: 'Payment Status Report',
+        description: 'BBVA confirms credit, relayed to MUFG',
+        duration: '~5 min',
+        xmlSnippet: `<FIToFIPmtStsRpt>
+  <GrpHdr>
+    <MsgId>BBVA-STS-0001</MsgId>
+    <CreDtTm>2026-02-20T11:30:00-06:00</CreDtTm>
+  </GrpHdr>
+  <TxInfAndSts>
+    <OrgnlUETR>${UETR}</OrgnlUETR>
+    <TxSts>ACCC</TxSts>
+    <AccptncDtTm>2026-02-20T11:30:00-06:00</AccptncDtTm>
+  </TxInfAndSts>
+</FIToFIPmtStsRpt>`,
+        detail: 'BBVA credits MX$112,367.48. ACCC relayed back. ¥1,000,000 → MX$112,367. Cost: 4.2%. 36-72 hrs across 3 time zones.',
+      },
+    ],
+    coverSteps: [
       {
         id: 1, from: 0, to: 3, direction: 'forward',
         messageType: 'pacs.008.001.13', messageName: 'FI to FI Customer Credit Transfer',
@@ -739,8 +1318,16 @@ export const CORRIDORS: Corridor[] = [
   </ChrgsInf>
   <InstgAgt><FinInstnId><BICFI>BOTKJPJT</BICFI></FinInstnId></InstgAgt>
   <InstdAgt><FinInstnId><BICFI>BCMRMXMM</BICFI></FinInstnId></InstdAgt>
+  <Dbtr>
+    <Nm>Yamato Corp</Nm>
+    <PstlAdr><Ctry>JP</Ctry></PstlAdr>
+  </Dbtr>
   <DbtrAgt><FinInstnId><BICFI>BOTKJPJT</BICFI></FinInstnId></DbtrAgt>
   <CdtrAgt><FinInstnId><BICFI>BCMRMXMM</BICFI></FinInstnId></CdtrAgt>
+  <Cdtr>
+    <Nm>Ciudad Automotive SA de CV</Nm>
+    <PstlAdr><Ctry>MX</Ctry></PstlAdr>
+  </Cdtr>
 </CdtTrfTxInf>`,
         detail: 'Cover method instruction leg: MUFG (Japan\'s largest bank) debits ¥1,000,000. pacs.008 goes DIRECT to BBVA México — settlement follows via pacs.009 COV. JPY→MXN is exotic (no direct JPY/MXN market, requires USD intermediation).',
       },
@@ -843,10 +1430,10 @@ export const CORRIDORS: Corridor[] = [
 ];
 
 // Helper: calculate running totals for a corridor simulation
-export function simulateCorridor(corridor: Corridor, amount: number) {
+export function simulateCorridor(corridor: Corridor, steps: Step[], amount: number) {
   let currentAmount = amount;
   const currency = corridor.sourceCurrency;
-  const steps = corridor.steps.map(step => {
+  const result = steps.map(step => {
     let amountBefore = currentAmount;
     if (step.fee && step.direction === 'forward') {
       currentAmount -= step.fee;
@@ -862,5 +1449,5 @@ export function simulateCorridor(corridor: Corridor, amount: number) {
       runningCurrency: step.fxTo || currency,
     };
   });
-  return steps;
+  return result;
 }

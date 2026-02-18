@@ -39,6 +39,7 @@ This tool pairs with my [Correspondent Banking Carousel & PDF Cheat Sheet](https
 
 ### 🔄 Interactive Flow Simulator
 - **5 pre-configured corridors** — SGD→GBP, USD→NGN, INR→USD, AED→PHP, JPY→MXN with realistic bank chains
+- **Serial / Cover toggle** — Switch between settlement methods per corridor; serial (INDA) shows hop-by-hop pacs.008, cover (COVE) shows direct pacs.008 instruction + parallel pacs.009 COV settlement chain
 - **Cover method visualization** — pacs.008 instruction arcs DIRECT from originator to beneficiary bank (dashed arc with "DIRECT" label), while pacs.009 COV settlement flows through the correspondent chain
 - **Bidirectional message flows** — Forward (pacs.008 + pacs.009 COV) and backward (pacs.002 status reports)
 - **Step-by-step animation** — Play/Pause/Next/Reset with 2.5s auto-advance
@@ -46,7 +47,8 @@ This tool pairs with my [Correspondent Banking Carousel & PDF Cheat Sheet](https
 - **Configurable amount** — Change the transfer amount and see fee impact in real time
 
 ### 📨 ISO 20022 Message Display
-- **Real XML snippets** per step — validated against official pacs.008.001.13, pacs.009.001.12, and pacs.002.001.15 XSD schemas
+- **XSD-validated XML snippets** per step — validated against official pacs.008.001.13, pacs.009.001.13, pacs.002.001.15, and camt.054.001.13 XSD schemas using automated lxml validation
+- **Mandatory elements enforced** — `Dbtr`/`Cdtr` party details with realistic entity names, `GrpHdr` where required, correct `xs:sequence` element ordering
 - **Cover method messages** — `SttlmMtd=COVE` in pacs.008, `UndrlygCstmrCdtTrf` in pacs.009 COV, party role shifts between instruction and cover legs
 - **UETR interlinking** — Same UUID links the direct pacs.008 instruction to the pacs.009 COV settlement chain
 - **BIC codes** — Real SWIFT BICs for all banks (DBSSSGSG, HSBCSGSG, CHASUS33, etc.)
@@ -60,11 +62,12 @@ This tool pairs with my [Correspondent Banking Carousel & PDF Cheat Sheet](https
 - **Summary stats** — Total fees, FX spread, amount received, cost percentage
 
 ### 🎓 Learn Tab
-- **How correspondent banking works** — Nostro/vostro mechanics explained
-- **$794 billion trapped liquidity** — Pre-funded nostro capital globally (Industry estimate, BIS CPMI data, 2016)
-- **Cover method explained** — Two parallel legs (instruction + settlement), party role shifts, linked to [SWIFT ISO 20022 Programme PDF](https://www.swift.com/swift-resource/248681/download) p.34-36
-- **ISO 20022 message reference** — pacs.008, pacs.009, pacs.002, camt.054, camt.056 with purposes
-- **SWIFT gpi & UETR** — Real-time tracking explained
+- **How correspondent banking works** — Nostro/vostro mechanics and trapped liquidity ($794B, BIS CPMI 2016)
+- **Serial method deep dive** — SttlmMtd=INDA, hop-by-hop pacs.008 flow, legacy MT 103 equivalent
+- **Cover method deep dive** — SttlmMtd=COVE, parallel legs (instruction + settlement), party role shift table from [SWIFT PDF](https://www.swift.com/swift-resource/248681/download) p.34 (Debtor Agent → Debtor, Creditor Agent → Creditor)
+- **When to choose Serial vs Cover** — 6-factor comparison table + side-by-side scenario cards
+- **ISO 20022 message reference** — pacs.008, pacs.009, pacs.002, camt.054, camt.056 with "Used In" column (Serial+Cover / Cover COV / Both / Exception)
+- **SWIFT gpi & UETR** — Real-time tracking, same UETR interlinks pacs.008 and pacs.009 COV
 - **Time zone & settlement windows** — Why overnight gaps add 12+ hours
 - **Cost drivers** — Chain length, FX spread, compliance costs, trapped liquidity
 
@@ -175,7 +178,7 @@ Output goes to `dist/` — deploy to any static host (GitHub Pages, Netlify, Ver
 
 | Data | Source |
 |------|--------|
-| ISO 20022 message structures | [ISO 20022](https://www.iso20022.org/) — pacs.008.001.13, pacs.009.001.12, pacs.002.001.15 XSD schemas |
+| ISO 20022 message structures | [ISO 20022](https://www.iso20022.org/) — pacs.008.001.13, pacs.009.001.13, pacs.002.001.15, camt.054.001.13 XSD schemas |
 | Cover method specification | [SWIFT ISO 20022 Programme](https://www.swift.com/swift-resource/248681/download) — p.34-36 cover method deep dive |
 | Trapped liquidity ($794B) | Industry estimate widely cited in BIS CPMI and FSB reports on correspondent banking (2016 baseline data) |
 | Corridor cost data | [World Bank Remittance Prices Worldwide](https://remittanceprices.worldbank.org/) Q4 2024 |
