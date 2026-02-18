@@ -487,7 +487,7 @@ function LearnPanel() {
                     <p>
                         Every payment gets a <strong>UETR</strong> (Unique End-to-End Transaction Reference) — a UUID that tracks the
                         payment across every hop. In the cover method, the <strong>same UETR</strong> appears in both the pacs.008 and pacs.009 COV,
-                        effectively interlinking the two parallel messages. 50% of gpi payments are credited within 30 minutes.
+                        effectively interlinking the two parallel messages. 60% of gpi payments are credited within 30 minutes.
                     </p>
 
                     <h3><IconClock size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 6 }} />Time Zones & Settlement Windows</h3>
