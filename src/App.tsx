@@ -20,9 +20,9 @@ const getNodeCX = (i: number) => getNodeX(i) + NODE_W / 2;
 function FlowVisualization({ corridor, currentStep }: { corridor: Corridor; currentStep: number }) {
     const banks = corridor.banks;
     const totalW = banks.length * NODE_W + (banks.length - 1) * GAP_X + PAD_X * 2;
-    const totalH = NODE_H + PAD_Y * 2 + 30;
+    const totalH = NODE_H + PAD_Y * 2 + 80;
 
-    const nodeY = PAD_Y;
+    const nodeY = PAD_Y + 50;
     const nodeCY = nodeY + NODE_H / 2;
 
     // Which banks are active/completed
@@ -50,8 +50,12 @@ function FlowVisualization({ corridor, currentStep }: { corridor: Corridor; curr
                 const y = isForward ? nodeCY - 8 : nodeCY + 8;
                 const midX = (fromX + toX) / 2;
 
-                // Curved path
-                const curveY = isForward ? y - 25 : y + 25;
+                // Scale curve height by hop distance — long spans arc high over intermediate banks
+                const hopDistance = Math.abs(step.to - step.from);
+                const baseCurve = 25;
+                const scaledCurve = baseCurve + (hopDistance > 1 ? (hopDistance - 1) * 35 : 0);
+                const curveY = isForward ? y - scaledCurve : y + scaledCurve;
+                const isDirect = isForward && hopDistance > 1;
 
                 if (!isActive && !isCompleted) return null;
 
@@ -60,7 +64,11 @@ function FlowVisualization({ corridor, currentStep }: { corridor: Corridor; curr
                         <path
                             d={`M ${fromX} ${y} Q ${midX} ${curveY} ${toX} ${y}`}
                             className={`flow-edge ${step.direction} ${isActive ? 'active' : ''}`}
-                            style={{ opacity: isCompleted ? 0.4 : 1 }}
+                            style={{
+                                opacity: isCompleted ? 0.4 : 1,
+                                strokeDasharray: isDirect && isActive ? '8 4' : undefined,
+                                strokeWidth: isDirect && isActive ? 3 : undefined,
+                            }}
                         />
                         {/* Arrow */}
                         <polygon
@@ -68,6 +76,20 @@ function FlowVisualization({ corridor, currentStep }: { corridor: Corridor; curr
                             className={`flow-edge-arrow ${step.direction}`}
                             style={{ opacity: isCompleted ? 0.4 : 1 }}
                         />
+                        {/* "DIRECT" label on long-span forward edges */}
+                        {isDirect && isActive && (
+                            <text
+                                x={midX}
+                                y={curveY + (isForward ? -4 : 14)}
+                                className="flow-direct-label"
+                                textAnchor="middle"
+                                fontSize="10"
+                                fontWeight="700"
+                                fill="var(--blue-bright)"
+                            >
+                                DIRECT
+                            </text>
+                        )}
                     </g>
                 );
             })}
@@ -307,13 +329,13 @@ function LearnPanel() {
                                 <td className="mono">pacs.008</td>
                                 <td>FI to FI Customer Credit Transfer</td>
                                 <td><Badge color="blue" size="sm">→ Forward</Badge></td>
-                                <td>Moves the payment instruction hop-by-hop through the chain</td>
+                                <td>Direct instruction from originator to beneficiary bank (cover method)</td>
                             </tr>
                             <tr>
                                 <td className="mono">pacs.009</td>
                                 <td>FI Credit Transfer (Cover)</td>
                                 <td><Badge color="blue" size="sm">→ Forward</Badge></td>
-                                <td>Settles funds via correspondent (cover method)</td>
+                                <td>Settlement via correspondent chain (same UETR links to pacs.008)</td>
                             </tr>
                             <tr>
                                 <td className="mono">pacs.002</td>
@@ -342,6 +364,20 @@ function LearnPanel() {
                     Every payment gets a <strong>UETR</strong> (Unique End-to-End Transaction Reference) — a UUID that tracks the
                     payment across every hop. The SWIFT gpi Tracker provides real-time visibility into where a payment is,
                     how much has been deducted in fees, and when it was credited. 50% of gpi payments are credited within 30 minutes.
+                </p>
+
+                <h3><IconWorld size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 6 }} />Cover Method: Two Parallel Legs</h3>
+                <p>
+                    This simulator uses the <strong>cover method</strong> (<a href="https://www.swift.com/swift-resource/248681/download" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue-bright)' }}>SWIFT ISO 20022 Programme, p.34-36</a>).
+                    Two messages travel in parallel, linked by the same UETR:
+                </p>
+                <ul style={{ color: 'var(--ink-secondary)', lineHeight: 1.8, fontSize: '0.9rem' }}>
+                    <li><strong>Instruction leg (pacs.008):</strong> Goes DIRECT from Debtor Agent (A) → Creditor Agent (D). Carries the full payment details.</li>
+                    <li><strong>Cover leg (pacs.009 COV):</strong> Routes A → B → C → D through the correspondent chain. Carries the <code>UndrlygCstmrCdtTrf</code> element linking it to the pacs.008. Settles the actual funds.</li>
+                </ul>
+                <p>
+                    Party roles shift between the two messages: the Debtor Agent in the pacs.008 becomes the Debtor in the pacs.009 COV.
+                    The pacs.008 uses <code>SttlmMtd=COVE</code> to signal that a cover payment will follow.
                 </p>
 
                 <h3><IconClock size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 6 }} />Time Zones & Settlement Windows</h3>
