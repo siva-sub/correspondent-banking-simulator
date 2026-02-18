@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
     Box, Container, Tabs, Text, Paper, NumberInput, Group, Badge, Title,
-    Stack, Code, Tooltip, ActionIcon,
+    Stack, Code, Tooltip, ActionIcon, SegmentedControl,
 } from '@mantine/core';
 import {
     IconPlayerPlay, IconPlayerPause,
@@ -167,44 +167,105 @@ function StepDetail({ step, corridor }: { step: Step; corridor: Corridor }) {
     );
 }
 
+// ─── Charge Bearer Types ─────────────────────────────────────
+// SHA (Shared): Sender pays sending bank fee, intermediary fees deducted from transfer
+// OUR: Sender pays ALL fees upfront — beneficiary receives full converted amount
+// BEN (Beneficiary): ALL fees deducted from the transfer amount
+type ChargeBearer = 'SHA' | 'OUR' | 'BEN';
+
 // ─── Stats Summary Panel ─────────────────────────────────────
-function StatsSummary({ corridor, amount }: { corridor: Corridor; amount: number }) {
-    const totalFees = corridor.steps
-        .filter(s => s.fee && s.direction === 'forward')
-        .reduce((sum, s) => sum + (s.fee || 0), 0);
-    const received = (amount - totalFees) * corridor.fxRate;
+function StatsSummary({ corridor, amount, chargeBearer }: { corridor: Corridor; amount: number; chargeBearer: ChargeBearer }) {
+    const forwardSteps = corridor.steps.filter(s => s.fee && s.direction === 'forward');
+    const totalFees = forwardSteps.reduce((sum, s) => sum + (s.fee || 0), 0);
+
+    // Fee allocation depends on charge bearer (Field 71A / <ChrgBr>)
+    // SHA: sender pays originating bank fee, intermediary fees deducted en route
+    // OUR: sender pays all fees — beneficiary receives exact converted amount
+    // BEN: all fees deducted from transfer before conversion
+    const senderFee = chargeBearer === 'OUR' ? totalFees
+        : chargeBearer === 'BEN' ? 0
+            : (forwardSteps[0]?.fee || 0); // SHA: sender pays first leg only
+    const deductedFromTransfer = chargeBearer === 'OUR' ? 0
+        : chargeBearer === 'BEN' ? totalFees
+            : totalFees - senderFee; // SHA: intermediary fees deducted en route
+    const senderPays = amount + (chargeBearer === 'OUR' ? senderFee : 0); // OUR: fees added on top
+    const amountAfterDeductions = amount - (chargeBearer === 'OUR' ? 0 : chargeBearer === 'BEN' ? totalFees : deductedFromTransfer);
+    const received = amountAfterDeductions * corridor.fxRate;
+
     const sym = corridor.sourceCurrency === 'JPY' ? '¥' : corridor.sourceCurrency === 'INR' ? '₹'
         : corridor.sourceCurrency === 'AED' ? 'AED ' : '$';
     const tgtSym = corridor.targetCurrency === 'NGN' ? '₦' : corridor.targetCurrency === 'PHP' ? '₱'
         : corridor.targetCurrency === 'MXN' ? 'MX$' : corridor.targetCurrency === 'GBP' ? '£' : '$';
 
+    const chargeBearerLabel = chargeBearer === 'SHA' ? 'Shared (SHA)'
+        : chargeBearer === 'OUR' ? 'Sender pays all (OUR)' : 'Beneficiary pays all (BEN)';
+
     return (
-        <div className="stats-summary">
-            <div className="stat-card">
-                <div className="stat-value" style={{ color: 'var(--ink-primary)' }}>{sym}{amount.toLocaleString()}</div>
-                <div className="stat-label">Amount Sent ({corridor.sourceCurrency})</div>
+        <>
+            <div className="charge-allocation-summary">
+                <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb="xs" style={{ letterSpacing: '0.06em' }}>
+                    Charge Allocation: {chargeBearerLabel}
+                </Text>
+                <div className="charge-flow">
+                    <div className="charge-flow-item">
+                        <div className="charge-flow-label">Sender pays</div>
+                        <div className="charge-flow-value" style={{ color: 'var(--ink-primary)' }}>
+                            {sym}{senderPays.toLocaleString()}
+                            {chargeBearer === 'OUR' && <span className="charge-flow-note"> ({sym}{amount.toLocaleString()} + {sym}{senderFee} fees)</span>}
+                            {chargeBearer === 'SHA' && senderFee > 0 && <span className="charge-flow-note"> (+ {sym}{senderFee} bank fee)</span>}
+                        </div>
+                    </div>
+                    <div className="charge-flow-arrow">→</div>
+                    <div className="charge-flow-item">
+                        <div className="charge-flow-label">Deducted en route</div>
+                        <div className="charge-flow-value" style={{ color: deductedFromTransfer > 0 ? 'var(--accent-red)' : 'var(--accent-green)' }}>
+                            {deductedFromTransfer > 0 ? `−${sym}${deductedFromTransfer}` : 'None'}
+                        </div>
+                    </div>
+                    <div className="charge-flow-arrow">→</div>
+                    <div className="charge-flow-item">
+                        <div className="charge-flow-label">FX @ {corridor.fxRate}</div>
+                        <div className="charge-flow-value" style={{ color: 'var(--accent-amber)' }}>
+                            {sym}{amountAfterDeductions.toLocaleString()} → {tgtSym}{Math.round(received).toLocaleString()}
+                        </div>
+                    </div>
+                    <div className="charge-flow-arrow">→</div>
+                    <div className="charge-flow-item highlight">
+                        <div className="charge-flow-label">Beneficiary receives</div>
+                        <div className="charge-flow-value" style={{ color: 'var(--accent-green)', fontWeight: 700 }}>
+                            {tgtSym}{Math.round(received).toLocaleString()}
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div className="stat-card">
-                <div className="stat-value" style={{ color: 'var(--accent-red)' }}>{sym}{totalFees.toLocaleString()}</div>
-                <div className="stat-label">Total Fees</div>
+
+            <div className="stats-summary">
+                <div className="stat-card">
+                    <div className="stat-value" style={{ color: 'var(--ink-primary)' }}>{sym}{amount.toLocaleString()}</div>
+                    <div className="stat-label">Transfer Amount ({corridor.sourceCurrency})</div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-value" style={{ color: 'var(--accent-red)' }}>{sym}{totalFees.toLocaleString()}</div>
+                    <div className="stat-label">Total Fees ({chargeBearer})</div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-value" style={{ color: 'var(--accent-amber)' }}>{corridor.fxSpread}</div>
+                    <div className="stat-label">FX Spread</div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-value" style={{ color: 'var(--accent-green)' }}>{tgtSym}{Math.round(received).toLocaleString()}</div>
+                    <div className="stat-label">Beneficiary Receives ({corridor.targetCurrency})</div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-value" style={{ color: 'var(--accent-red)' }}>{corridor.totalCostPct}</div>
+                    <div className="stat-label">Total Cost</div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-value" style={{ color: 'var(--accent-blue)' }}>{corridor.settlementTime}</div>
+                    <div className="stat-label">Settlement Time</div>
+                </div>
             </div>
-            <div className="stat-card">
-                <div className="stat-value" style={{ color: 'var(--accent-amber)' }}>{corridor.fxSpread}</div>
-                <div className="stat-label">FX Spread</div>
-            </div>
-            <div className="stat-card">
-                <div className="stat-value" style={{ color: 'var(--accent-green)' }}>{tgtSym}{Math.round(received).toLocaleString()}</div>
-                <div className="stat-label">Amount Received ({corridor.targetCurrency})</div>
-            </div>
-            <div className="stat-card">
-                <div className="stat-value" style={{ color: 'var(--accent-red)' }}>{corridor.totalCostPct}</div>
-                <div className="stat-label">Total Cost</div>
-            </div>
-            <div className="stat-card">
-                <div className="stat-value" style={{ color: 'var(--accent-blue)' }}>{corridor.settlementTime}</div>
-                <div className="stat-label">Settlement Time</div>
-            </div>
-        </div>
+        </>
     );
 }
 
@@ -374,6 +435,7 @@ export default function App() {
     const [amount, setAmount] = useState<number>(CORRIDORS[0].defaultAmount);
     const [currentStep, setCurrentStep] = useState<number>(-1);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [chargeBearer, setChargeBearer] = useState<ChargeBearer>('SHA');
 
     const corridor = useMemo(() =>
         CORRIDORS.find(c => c.id === selectedCorridor)!,
@@ -488,8 +550,8 @@ export default function App() {
                                 ))}
                             </div>
 
-                            {/* Amount Input */}
-                            <Group gap="md" mt="md" align="flex-end">
+                            {/* Amount + Charge Bearer */}
+                            <Group gap="md" mt="md" align="flex-end" wrap="wrap">
                                 <NumberInput
                                     label={`Amount (${corridor.sourceCurrency})`}
                                     value={amount}
@@ -500,10 +562,35 @@ export default function App() {
                                     styles={{ input: { fontFamily: 'var(--font-mono)', fontWeight: 600 } }}
                                     w={200}
                                 />
+                                <Stack gap={4}>
+                                    <Text size="xs" fw={600} c="dimmed">Charge Bearer (Field 71A)</Text>
+                                    <SegmentedControl
+                                        value={chargeBearer}
+                                        onChange={(v) => setChargeBearer(v as ChargeBearer)}
+                                        data={[
+                                            { label: 'SHA', value: 'SHA' },
+                                            { label: 'OUR', value: 'OUR' },
+                                            { label: 'BEN', value: 'BEN' },
+                                        ]}
+                                        size="sm"
+                                        styles={{
+                                            root: { fontFamily: 'var(--font-mono)' },
+                                        }}
+                                    />
+                                </Stack>
                                 <Text size="sm" c="dimmed" pb={8}>
                                     FX Rate: <Code>{corridor.fxRate}</Code> · Spread: {corridor.fxSpread}
                                 </Text>
                             </Group>
+
+                            {/* Charge Allocation Explainer */}
+                            <div className="charge-explainer" style={{ marginTop: 12 }}>
+                                <Text size="xs" c="dimmed" style={{ lineHeight: 1.5 }}>
+                                    {chargeBearer === 'SHA' && '🔀 SHA (Shared): Sender pays originating bank fee. Intermediary and beneficiary bank fees are deducted from the transfer en route. Most common in commercial payments.'}
+                                    {chargeBearer === 'OUR' && '💰 OUR: Sender pays ALL bank fees upfront (added to transfer cost). Beneficiary receives the full converted amount. Used when sender guarantees full payment.'}
+                                    {chargeBearer === 'BEN' && '📥 BEN (Beneficiary): ALL fees deducted from the transfer amount before conversion. Sender pays only the transfer amount. Beneficiary receives less. Common in low-value remittances.'}
+                                </Text>
+                            </div>
                         </Paper>
 
                         {/* Flow Visualization */}
@@ -572,15 +659,16 @@ export default function App() {
                             </Paper>
                         )}
 
-                        {/* Summary Stats (shown when complete) */}
-                        {isComplete && (
-                            <Paper className="brut-card" p="lg" mb="lg">
-                                <Text size="sm" fw={700} mb="md" tt="uppercase" c="dimmed" style={{ letterSpacing: '0.08em' }}>
-                                    <IconCircleCheck size={16} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 4 }} /> Transfer Complete — Summary
-                                </Text>
-                                <StatsSummary corridor={corridor} amount={amount} />
-                            </Paper>
-                        )}
+                        {/* Summary Stats (always visible once charge bearer is toggled or flow completes) */}
+                        <Paper className="brut-card" p="lg" mb="lg">
+                            <Text size="sm" fw={700} mb="md" tt="uppercase" c="dimmed" style={{ letterSpacing: '0.08em' }}>
+                                {isComplete
+                                    ? <><IconCircleCheck size={16} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 4 }} /> Transfer Complete — Summary</>
+                                    : <>💱 Fee Breakdown — {chargeBearer === 'SHA' ? 'Shared' : chargeBearer === 'OUR' ? 'Sender Pays All' : 'Beneficiary Pays All'}</>
+                                }
+                            </Text>
+                            <StatsSummary corridor={corridor} amount={amount} chargeBearer={chargeBearer} />
+                        </Paper>
                     </Tabs.Panel>
 
                     {/* ─── LEARN TAB ────────────────────────────── */}

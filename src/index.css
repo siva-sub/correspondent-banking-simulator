@@ -575,6 +575,87 @@ body::before {
     font-weight: 500;
 }
 
+/* ─── Charge Allocation Flow ─────────────────────────────────── */
+.charge-allocation-summary {
+    background: var(--surface-1);
+    border: 2px solid var(--surface-2);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+}
+
+.charge-flow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.charge-flow-item {
+    background: var(--surface-0);
+    border: 2px solid var(--surface-2);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    text-align: center;
+    min-width: 120px;
+    flex: 1;
+}
+
+.charge-flow-item.highlight {
+    border-color: var(--accent-green);
+    background: color-mix(in srgb, var(--accent-green) 5%, var(--surface-0));
+}
+
+.charge-flow-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.charge-flow-value {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.charge-flow-note {
+    font-size: 0.7rem;
+    color: var(--ink-muted);
+    font-weight: 400;
+}
+
+.charge-flow-arrow {
+    font-size: 1.2rem;
+    color: var(--ink-muted);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.charge-explainer {
+    background: var(--surface-1);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    border-left: 3px solid var(--accent-blue);
+}
+
+@media (max-width: 768px) {
+    .charge-flow {
+        flex-direction: column;
+    }
+
+    .charge-flow-arrow {
+        transform: rotate(90deg);
+    }
+
+    .charge-flow-item {
+        width: 100%;
+    }
+}
+
 /* ─── Detail Description ─────────────────────────────────────── */
 .step-description {
     background: var(--surface-1);
