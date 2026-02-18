@@ -507,6 +507,27 @@ function LearnPanel() {
                         <li><strong>Compliance costs:</strong> High-risk corridors require enhanced due diligence</li>
                         <li><strong>Trapped liquidity:</strong> Banks charge more for exotic nostro positions</li>
                     </ul>
+
+                    <div style={{ background: 'var(--surface-2)', padding: '16px 20px', borderRadius: 8, margin: '16px 0', borderLeft: '3px solid var(--accent-amber)' }}>
+                        <Text size="sm" fw={700} mb={8}>LVP & Remittances vs HVP — A Tale of Two Cost Structures</Text>
+                        <ul style={{ color: 'var(--ink-secondary)', lineHeight: 1.9, fontSize: '0.88rem', margin: 0, paddingLeft: 18 }}>
+                            <li>
+                                On <strong>low-value payments (LVP) and remittances</strong>, costs are much higher — averaging
+                                <strong style={{ color: 'var(--accent-red)' }}> 6.49% globally</strong> (World Bank Remittance Prices Worldwide)
+                            </li>
+                            <li>
+                                This explains why the <strong>G20 targets separate remittances from the rest</strong>: the target for
+                                remittances is <strong style={{ color: 'var(--accent-amber)' }}>3%</strong> (UN SDG 10.c), while the broader
+                                FSB cross-border payment target is <strong style={{ color: 'var(--accent-green)' }}>1%</strong>
+                            </li>
+                            <li>
+                                For <strong>high-value payments (HVP)</strong>, a big part of the cost sits on the
+                                <strong> FX spread side</strong> — much higher on currency pairs with less liquidity (e.g. JPY→MXN vs USD→EUR).
+                                On top of that, <strong>de-risking adds to costs</strong> by forcing payments through more intermediaries
+                                on certain corridors (especially those involving smaller or higher-risk jurisdictions)
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </Paper>
         </Stack>
