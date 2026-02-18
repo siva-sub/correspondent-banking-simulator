@@ -253,25 +253,25 @@ export const CORRIDORS: Corridor[] = [
         detail: 'DBS validates KYC/AML, debits sender account, generates UETR, sends pacs.008 DIRECT to Barclays (cover method — instruction leg). Settlement method COVE triggers parallel pacs.009 COV cover payment.',
       },
       {
-        id: 2, from: 1, to: 0, direction: 'backward',
-        messageType: 'pacs.002.001.15', messageName: 'Payment Status Report',
-        description: 'HSBC Singapore acknowledges receipt',
+        id: 2, from: 0, to: 1, direction: 'forward',
+        messageType: 'pacs.009.001.13', messageName: 'FI Credit Transfer (Cover)',
+        description: 'DBS initiates cover payment to HSBC SG (parallel)',
         duration: '~30 sec',
-        // XSD: FIToFIPmtStsRpt > GrpHdr (mandatory) + TxInfAndSts
-        // TxInfAndSts sequence: OrgnlEndToEndId > OrgnlUETR > TxSts > StsRsnInf
-        xmlSnippet: `<FIToFIPmtStsRpt>
-  <GrpHdr>
-    <MsgId>HSBC-STS-0001</MsgId>
-    <CreDtTm>2026-02-18T09:15:30+08:00</CreDtTm>
-  </GrpHdr>
-  <TxInfAndSts>
-    <OrgnlEndToEndId>E2E-SGD-GBP-001</OrgnlEndToEndId>
-    <OrgnlUETR>${UETR}</OrgnlUETR>
-    <TxSts>ACSP</TxSts>
-    <StsRsnInf><Rsn><Cd>G000</Cd></Rsn></StsRsnInf>
-  </TxInfAndSts>
-</FIToFIPmtStsRpt>`,
-        detail: 'HSBC Singapore sends ACSP (Accepted Settlement in Process) status back to DBS. The UETR links this confirmation to the original payment.',
+        nostroAction: 'Debit: DBS SGD nostro → Credit: HSBC SG SGD account',
+        // XSD: FICdtTrf > CdtTrfTxInf with UndrlygCstmrCdtTrf — same UETR links to pacs.008
+        xmlSnippet: `<FICdtTrf>
+  <CdtTrfTxInf>
+    <PmtId>
+      <InstrId>DBS-COV-0001</InstrId>
+      <EndToEndId>E2E-SGD-GBP-001</EndToEndId>
+      <UETR>${UETR}</UETR>
+    </PmtId>
+    <IntrBkSttlmAmt Ccy="SGD">49965.00</IntrBkSttlmAmt>
+    <InstgAgt><FinInstnId><BICFI>DBSSSGSG</BICFI></FinInstnId></InstgAgt>
+    <InstdAgt><FinInstnId><BICFI>HSBCSGSG</BICFI></FinInstnId></InstdAgt>
+  </CdtTrfTxInf>
+</FICdtTrf>`,
+        detail: 'Cover payment leg (parallel to step 1): DBS sends pacs.009 COV to HSBC Singapore to initiate settlement. Same UETR interlinks with the direct pacs.008. UndrlygCstmrCdtTrf element carries the original customer payment details.',
       },
       {
         id: 3, from: 1, to: 2, direction: 'forward',
@@ -381,9 +381,9 @@ export const CORRIDORS: Corridor[] = [
         detail: 'Barclays sends ACCC (Accepted Credit Completed) — beneficiary account credited with £28,970. SWIFT gpi Tracker updated. Total bank fees: SGD 35 + SGD 25 + £15.',
       },
       {
-        id: 7, from: 2, to: 0, direction: 'backward',
+        id: 7, from: 3, to: 0, direction: 'backward',
         messageType: 'pacs.002.001.15', messageName: 'Payment Status Report (End-to-End)',
-        description: 'Final confirmation relayed to DBS',
+        description: 'Final ACCC confirmation relayed to DBS',
         duration: '~2 min',
         // XSD: GrpHdr mandatory, ChrgsInf uses Charges16 (Amt + Agt)
         xmlSnippet: `<FIToFIPmtStsRpt>
