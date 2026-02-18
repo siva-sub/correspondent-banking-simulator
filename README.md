@@ -182,7 +182,7 @@ Output goes to `dist/` — deploy to any static host (GitHub Pages, Netlify, Ver
 | Cover method specification | [SWIFT ISO 20022 Programme](https://www.swift.com/swift-resource/248681/download) — p.34-36 cover method deep dive |
 | Trapped liquidity ($794B) | Industry estimate widely cited in BIS CPMI and FSB reports on correspondent banking (2016 baseline data) |
 | Corridor cost data | [World Bank Remittance Prices Worldwide](https://remittanceprices.worldbank.org/) Q4 2024 |
-| SWIFT gpi statistics | [SWIFT gpi](https://www.swift.com/our-solutions/swift-gpi) — 60% credited within 30 minutes |
+| SWIFT gpi statistics | [SWIFT gpi](https://www.swift.com/products/swift-gpi) — 60% credited within 30 minutes |
 | ISO 20022 migration | [SWIFT ISO 20022](https://www.swift.com/standards/iso-20022) — MT→MX migration complete Nov 2025 |
 | BIC codes | [SWIFT BIC Directory](https://www.swift.com/standards/data-standards/bic-business-identifier-code) |
 | Bank names & corridors | Derived from public correspondent banking relationships |
