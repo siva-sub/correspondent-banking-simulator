@@ -29,6 +29,7 @@
     --cat-fx: #F57F17;
     --cat-fee: #C62828;
     --cat-nostro: #6A1B9A;
+    --cat-customer: #8E24AA;
 
     /* Typography */
     --font-heading: 'DM Sans', sans-serif;
@@ -242,6 +243,12 @@ body::before {
     fill: var(--surface-1);
     stroke: var(--accent-green);
     stroke-width: 2.5;
+}
+
+.flow-bank-node.customer rect {
+    stroke: var(--cat-customer);
+    stroke-width: 2.5;
+    fill: color-mix(in srgb, var(--cat-customer) 5%, var(--surface-0));
 }
 
 .flow-bank-label {

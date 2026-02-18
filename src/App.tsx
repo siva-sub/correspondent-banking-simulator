@@ -111,7 +111,7 @@ function FlowVisualization({ corridor, steps, currentStep }: { corridor: Corrido
                         </text>
                         <text x={x + NODE_W / 2} y={nodeY + 40} className="flow-bank-bic">{bank.bic}</text>
                         <text x={x + NODE_W / 2} y={nodeY + 56} className="flow-bank-country">
-                            {bank.countryCode} • {bank.role === 'originator' ? 'Sender' : bank.role === 'beneficiary' ? 'Receiver' : 'Intermediary'}
+                            {bank.countryCode} • {bank.role === 'customer' ? 'Customer' : bank.role === 'originator' ? 'Sender' : bank.role === 'beneficiary' ? 'Receiver' : 'Intermediary'}
                         </text>
                     </g>
                 );
