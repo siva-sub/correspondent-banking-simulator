@@ -243,7 +243,7 @@ export const CORRIDORS: Corridor[] = [
     <AccptncDtTm>2026-02-18T17:42:00+00:00</AccptncDtTm>
   </TxInfAndSts>
 </FIToFIPmtStsRpt>`,
-        detail: 'Barclays sends ACCC (Accepted Settlement Completed) — beneficiary credited £28,970. Status relayed back through the chain.',
+        detail: 'Barclays sends ACCC (Accepted Settlement Completed) — beneficiary credited £28,970. pacs.002 is a point-to-point status report between agents (modelled here as chain relay for visual clarity).',
       },
       {
         id: 5, from: 3, to: 2, direction: 'backward',
@@ -262,7 +262,7 @@ export const CORRIDORS: Corridor[] = [
     <StsRsnInf><Rsn><Cd>G000</Cd></Rsn></StsRsnInf>
   </TxInfAndSts>
 </FIToFIPmtStsRpt>`,
-        detail: 'HSBC London relays ACSP (Accepted Settlement in Process) back to HSBC Singapore. Hop-by-hop: each bank confirms to its upstream counterpart.',
+        detail: 'HSBC London relays ACSP (Accepted Settlement in Process) back to HSBC Singapore. pacs.002 is a point-to-point status report — usage governed by bilateral agreement.',
       },
       {
         id: 6, from: 2, to: 1, direction: 'backward',
@@ -509,7 +509,7 @@ export const CORRIDORS: Corridor[] = [
     </Ntry>
   </Ntfctn>
 </BkToCstmrDbtCdtNtfctn>`,
-        detail: 'HSBC London sends camt.054 credit notification confirming GBP funds have been booked to the nostro account. This enables HSBC SG to reconcile.',
+        detail: 'HSBC London sends camt.054 credit notification after matching the pacs.008 instruction (step 2) with incoming pacs.009 cover funds via UETR. GBP funds booked to the nostro account.',
       },
       {
         id: 6, from: 3, to: 4, direction: 'forward',
@@ -800,7 +800,7 @@ export const CORRIDORS: Corridor[] = [
     <StsRsnInf><Rsn><Cd>G000</Cd></Rsn></StsRsnInf>
   </TxInfAndSts>
 </FIToFIPmtStsRpt>`,
-        detail: 'Standard Chartered relays ACSP status back to Citibank. Hop-by-hop confirmation through the serial chain.',
+        detail: 'Standard Chartered relays ACSP status back to Citibank. pacs.002 is a point-to-point status report — usage governed by bilateral agreement.',
       },
       {
         id: 6, from: 2, to: 1, direction: 'backward',
@@ -1027,7 +1027,7 @@ export const CORRIDORS: Corridor[] = [
     </Ntry>
   </Ntfctn>
 </BkToCstmrDbtCdtNtfctn>`,
-        detail: 'Standard Chartered sends camt.054 credit notification confirming USD funds booked to the nostro account. Enables Citibank to reconcile the cover payment.',
+        detail: 'Standard Chartered sends camt.054 credit notification after matching the pacs.008 instruction (step 2) with incoming pacs.009 cover funds via UETR. USD funds booked to the nostro account.',
       },
       {
         id: 6, from: 3, to: 4, direction: 'forward',
@@ -1547,7 +1547,7 @@ export const CORRIDORS: Corridor[] = [
     </Ntry>
   </Ntfctn>
 </BkToCstmrDbtCdtNtfctn>`,
-        detail: 'Deutsche Bank NY sends camt.054 credit notification confirming USD funds booked to the nostro account. Enables DB Mumbai to reconcile the cover payment.',
+        detail: 'Deutsche Bank NY sends camt.054 credit notification after matching the pacs.008 instruction (step 2) with incoming pacs.009 cover funds via UETR. USD funds booked to the nostro account.',
       },
       {
         id: 6, from: 3, to: 4, direction: 'forward',
@@ -2061,7 +2061,7 @@ export const CORRIDORS: Corridor[] = [
     </Ntry>
   </Ntfctn>
 </BkToCstmrDbtCdtNtfctn>`,
-        detail: 'StanChart Manila sends camt.054 credit notification confirming PHP funds booked to the nostro account. Enables StanChart Dubai to reconcile the cover payment.',
+        detail: 'StanChart Manila sends camt.054 credit notification after matching the pacs.008 instruction (step 2) with incoming pacs.009 cover funds via UETR. PHP funds booked to the nostro account.',
       },
       {
         id: 6, from: 3, to: 4, direction: 'forward',
@@ -2574,7 +2574,7 @@ export const CORRIDORS: Corridor[] = [
     </Ntry>
   </Ntfctn>
 </BkToCstmrDbtCdtNtfctn>`,
-        detail: 'HSBC New York sends camt.054 credit notification confirming USD funds booked to the nostro account. Enables HSBC Tokyo to reconcile the cover payment.',
+        detail: 'HSBC New York sends camt.054 credit notification after matching the pacs.008 instruction (step 2) with incoming pacs.009 cover funds via UETR. USD funds booked to the nostro account.',
       },
       {
         id: 6, from: 3, to: 4, direction: 'forward',

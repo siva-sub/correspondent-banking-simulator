@@ -701,6 +701,7 @@ export default function App() {
                 <header className="app-header">
                     <Title order={1}><IconBuildingBank size={28} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 8 }} />Correspondent Banking Flow Simulator</Title>
                     <p className="subtitle">Watch money flow through the correspondent banking system — step by step</p>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-2)', marginTop: '0.25rem', fontStyle: 'italic', opacity: 0.7 }}>Note: In production, message usage varies by scheme/market practice; this simulator illustrates a common high-level pattern.</p>
                 </header>
 
                 <Tabs defaultValue="simulator" variant="outline" radius="md">
